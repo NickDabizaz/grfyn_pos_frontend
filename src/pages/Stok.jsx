@@ -1,0 +1,342 @@
+import { useState, useEffect } from 'react';
+import api from '../api/axios';
+import { formatRupiah, formatDate } from '../lib/utils';
+import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
+import { Search, Plus, ClipboardList, RotateCcw, Package, ArrowDown, ArrowUp } from 'lucide-react';
+
+export default function Stok() {
+  const [tab, setTab] = useState('kartu');
+  const user = useAuthStore((s) => s.user);
+
+  // Kartu Stok
+  const [kartu, setKartu] = useState([]);
+  const [ksSearch, setKsSearch] = useState('');
+  const [ksJenis, setKsJenis] = useState('');
+
+  // Penyesuaian
+  const [penyesuaian, setPenyesuaian] = useState([]);
+  const [showAdjForm, setShowAdjForm] = useState(false);
+  const [adjCart, setAdjCart] = useState([]);
+  const [adjSearch, setAdjSearch] = useState('');
+  const [adjBarang, setAdjBarang] = useState([]);
+  const [adjKeterangan, setAdjKeterangan] = useState('');
+
+  // Saldo Stok
+  const [saldo, setSaldo] = useState([]);
+
+  // Closing
+  const [closing, setClosing] = useState([]);
+  const [clsJenis, setClsJenis] = useState('harian');
+  const [clsTgl, setClsTgl] = useState(new Date().toISOString().slice(0, 10));
+
+  useEffect(() => {
+    loadKartu();
+    api.get('/stok/penyesuaian').then((r) => setPenyesuaian(r.data));
+    api.get('/stok/saldostok').then((r) => setSaldo(r.data));
+    api.get('/stok/closing').then((r) => setClosing(r.data));
+  }, []);
+
+  const loadKartu = () => {
+    const params = {};
+    if (ksSearch) params.idbarang = ksSearch;
+    if (ksJenis) params.jenis = ksJenis;
+    api.get('/stok/kartustok', { params }).then((r) => setKartu(r.data));
+  };
+
+  const searchAdj = (term) => {
+    const q = term || adjSearch;
+    if (!q) return;
+    api.get(`/barang?search=${encodeURIComponent(q)}`).then((r) => setAdjBarang(r.data));
+  };
+
+  const addAdjItem = (b) => {
+    api.get('/stok/saldostok').then((r) => {
+      const item = r.data.find((s) => s.idbarang === b.idbarang);
+      const stokProgram = item ? parseInt(item.stok) : 0;
+      setAdjCart([...adjCart, { ...b, stokProgram, jml: stokProgram }]);
+    });
+  };
+
+  const handlePenyesuaian = async () => {
+    if (!adjCart.length) return toast.error('Tidak ada item');
+    try {
+      const payload = {
+        idkasir: user?.iduser,
+        keterangan: adjKeterangan,
+        items: adjCart.map((a) => ({
+          idbarang: a.idbarang,
+          jml: a.jml,
+          keterangan: `Fisik: ${a.jml}, Program: ${a.stokProgram}`,
+        })),
+      };
+      await api.post('/stok/penyesuaian', payload);
+      toast.success('Penyesuaian stok berhasil');
+      setShowAdjForm(false);
+      setAdjCart([]);
+      setAdjKeterangan('');
+      api.get('/stok/penyesuaian').then((r) => setPenyesuaian(r.data));
+      api.get('/stok/saldostok').then((r) => setSaldo(r.data));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal');
+    }
+  };
+
+  const handleClosing = async () => {
+    try {
+      await api.post('/stok/closing', { jenis: clsJenis, tglclosing: clsTgl });
+      toast.success('Closing berhasil');
+      api.get('/stok/closing').then((r) => setClosing(r.data));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal');
+    }
+  };
+
+  const tabs = [
+    { key: 'kartu', label: 'Kartu Stok', icon: ClipboardList },
+    { key: 'saldo', label: 'Saldo Stok', icon: Package },
+    { key: 'penyesuaian', label: 'Penyesuaian', icon: RotateCcw },
+    { key: 'closing', label: 'Closing', icon: ClipboardList },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold text-dark-500">Stok</h2>
+        <p className="text-sm text-dark-300">Manajemen stok & inventori</p>
+      </div>
+
+      <div className="flex bg-white rounded-2xl p-1 border border-primary-50 w-fit">
+        {tabs.map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              tab === t.key ? 'bg-primary-500 text-white shadow-sm' : 'text-dark-400 hover:text-dark-600'
+            }`}>
+            <t.icon className="w-4 h-4" /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Kartu Stok */}
+      {tab === 'kartu' && (
+        <div className="space-y-4">
+          <div className="flex gap-3 bg-white rounded-2xl p-4 border border-primary-50">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
+              <input value={ksSearch} onChange={(e) => setKsSearch(e.target.value.toUpperCase())}
+                placeholder="ID Barang..." className="input-upper w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+            </div>
+            <select value={ksJenis} onChange={(e) => setKsJenis(e.target.value)}
+              className="px-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+              <option value="">Semua Jenis</option>
+              <option value="M">Masuk</option>
+              <option value="K">Keluar</option>
+            </select>
+            <button onClick={loadKartu} className="px-6 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600">
+              Filter
+            </button>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-primary-50 bg-warm-50/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode Trans</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Barang</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Jenis</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-dark-300">Jml</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {kartu.map((k) => (
+                  <tr key={k.idkartustok} className="border-b border-primary-50/50 hover:bg-warm-50/30 text-sm">
+                    <td className="px-4 py-3 text-xs text-dark-300">{formatDate(k.tgltrans)}</td>
+                    <td className="px-4 py-3 text-xs font-mono text-dark-300">{k.kodetrans}</td>
+                    <td className="px-4 py-3 text-dark-500">{k.namabarang || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                        k.jenis === 'M' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+                      }`}>
+                        {k.jenis === 'M' ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />}
+                        {k.jenis === 'M' ? 'MASUK' : 'KELUAR'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-dark-500">{k.jml}</td>
+                    <td className="px-4 py-3 text-xs text-dark-300">{k.keterangan || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Saldo Stok */}
+      {tab === 'saldo' && (
+        <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-primary-50 bg-warm-50/50">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Nama Barang</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Satuan</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Stok Min</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Stok</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {saldo.map((s) => (
+                <tr key={s.idbarang} className={`border-b border-primary-50/50 text-sm ${(s.stok || 0) <= (s.stokmin || 0) ? 'bg-red-50/30' : 'hover:bg-warm-50/30'}`}>
+                  <td className="px-4 py-3 text-xs font-mono text-dark-300">{s.kodebarang}</td>
+                  <td className="px-4 py-3 font-medium text-dark-500">{s.namabarang}</td>
+                  <td className="px-4 py-3 text-dark-400">{s.satuan || '-'}</td>
+                  <td className="px-4 py-3 text-center text-dark-400">{s.stokmin || 0}</td>
+                  <td className="px-4 py-3 text-center font-bold">{s.stok || 0}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                      (s.stok || 0) <= (s.stokmin || 0) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
+                    }`}>
+                      {(s.stok || 0) <= (s.stokmin || 0) ? 'MENIPIS' : 'AMAN'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Penyesuaian */}
+      {tab === 'penyesuaian' && (
+        <div className="space-y-4">
+          <button onClick={() => setShowAdjForm(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-all">
+            <Plus className="w-4 h-4" /> Penyesuaian Baru
+          </button>
+
+          <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-primary-50 bg-warm-50/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kasir</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {penyesuaian.map((p) => (
+                  <tr key={p.idpenyesuaianstok} className="border-b border-primary-50/50 hover:bg-warm-50/30 text-sm">
+                    <td className="px-4 py-3 text-xs font-mono text-dark-300">{p.kodepenyesuaianstok}</td>
+                    <td className="px-4 py-3 text-dark-400">{formatDate(p.tgltrans)}</td>
+                    <td className="px-4 py-3 text-dark-500">{p.kasir || '-'}</td>
+                    <td className="px-4 py-3 text-xs text-dark-300">{p.keterangan || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {showAdjForm && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" style={{animation: 'fadeIn 0.2s ease'}}>
+              <div className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto scrollbar-thin shadow-2xl animate-in">
+                <h3 className="text-lg font-bold text-dark-500 mb-4">Penyesuaian Stok</h3>
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold text-dark-400 mb-1">Keterangan</label>
+                  <input value={adjKeterangan} onChange={(e) => setAdjKeterangan(e.target.value.toUpperCase())}
+                    placeholder="Alasan penyesuaian..." className="input-upper w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm" />
+                </div>
+                <div className="flex gap-2 mb-4">
+                  <input value={adjSearch} onChange={(e) => { const v = e.target.value.toUpperCase(); setAdjSearch(v); searchAdj(v); }}
+                    placeholder="Cari barang..." className="input-upper flex-1 px-3 py-2.5 rounded-xl border border-primary-100 text-sm" />
+                  <button onClick={() => searchAdj(adjSearch)} className="px-4 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-semibold">Cari</button>
+                </div>
+                {adjBarang.map((b) => (
+                  <button key={b.idbarang} onClick={() => addAdjItem(b)}
+                    className="w-full text-left p-2 mb-1 rounded-lg bg-warm-50 hover:bg-primary-50 text-sm text-dark-500">
+                    {b.namabarang} ({b.kodebarang})
+                  </button>
+                ))}
+                <div className="space-y-2 mt-4">
+                  {adjCart.map((a, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-warm-50">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-dark-500">{a.namabarang}</p>
+                        <p className="text-xs text-dark-300">Program: {a.stokProgram} | Selisih: {a.stokProgram - a.jml}</p>
+                      </div>
+                      <input type="number" value={a.jml} onChange={(e) => {
+                        const newCart = [...adjCart];
+                        newCart[i].jml = parseInt(e.target.value) || 0;
+                        setAdjCart(newCart);
+                      }} className="w-24 px-2 py-1.5 rounded-lg border border-primary-100 text-sm text-center" />
+                      <button onClick={() => setAdjCart(adjCart.filter((_, j) => j !== i))}
+                        className="text-dark-300 hover:text-red-500 text-xs">Hapus</button>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={handlePenyesuaian} disabled={adjCart.length === 0}
+                  className="w-full mt-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm disabled:opacity-50 transition-all">
+                  Simpan Penyesuaian
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Closing */}
+      {tab === 'closing' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl p-5 border border-primary-50">
+            <h3 className="text-sm font-bold text-dark-500 mb-3">Closing Baru</h3>
+            <div className="flex items-end gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-dark-400 mb-1">Jenis</label>
+                <select value={clsJenis} onChange={(e) => setClsJenis(e.target.value)}
+                  className="px-4 py-2.5 rounded-xl border border-primary-100 text-sm">
+                  <option value="harian">Harian</option>
+                  <option value="bulanan">Bulanan</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-dark-400 mb-1">Tanggal Closing</label>
+                <input type="date" value={clsTgl} onChange={(e) => setClsTgl(e.target.value)}
+                  className="px-4 py-2.5 rounded-xl border border-primary-100 text-sm" />
+              </div>
+              <button onClick={handleClosing}
+                className="px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold transition-all">
+                Proses Closing
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-primary-50 bg-warm-50/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Jenis</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {closing.map((c) => (
+                  <tr key={c.idclosing} className="border-b border-primary-50/50 text-sm">
+                    <td className="px-4 py-3 text-xs font-mono text-dark-300">{c.kodeclosing}</td>
+                    <td className="px-4 py-3 text-dark-400">{formatDate(c.tglclosing)}</td>
+                    <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-lg bg-accent-50 text-accent-600 text-[10px] font-bold uppercase">{c.jenis}</span></td>
+                    <td className="px-4 py-3 text-emerald-600 text-xs font-bold">Selesai</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
