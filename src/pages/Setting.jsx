@@ -8,18 +8,18 @@ import { Store, Key, Image, Save, RefreshCw } from 'lucide-react';
 export default function Setting() {
   const user                    = useAuthStore((s) => s.user);
   const updateUser              = useAuthStore((s) => s.updateUser);
-  const [toko, setToko]         = useState({ namatoko: '', alamat: '', hp: '', email: '', ppn: 11 });
+  const [toko, setToko]         = useState({ namatenant: '', alamat: '', hp: '', email: '', ppn: 11 });
   const [password, setPassword] = useState({ oldPass: '', newPass: '' });
   const [logo, setLogo] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (user) setToko({ namatoko: user.namatoko || '', alamat: user.alamat || '', hp: user.hp || '', email: user.email || '', ppn: user.ppn ?? 11 });
+    if (user) setToko({ namatenant: user.namatenant || '', alamat: user.alamat || '', hp: user.hp || '', email: user.email || '', ppn: user.ppn ?? 11 });
   }, [user]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    if (user) setToko({ namatoko: user.namatoko || '', alamat: user.alamat || '', hp: user.hp || '', email: user.email || '', ppn: user.ppn ?? 11 });
+    if (user) setToko({ namatenant: user.namatenant || '', alamat: user.alamat || '', hp: user.hp || '', email: user.email || '', ppn: user.ppn ?? 11 });
     setTimeout(() => setRefreshing(false), 300);
   };
 
@@ -58,7 +58,7 @@ export default function Setting() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4 ms-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Setting</h2>
@@ -80,7 +80,7 @@ export default function Setting() {
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-semibold text-dark-400 mb-1">Nama Toko</label>
-              <input value={toko.namatoko} onChange={(e) => setToko({...toko, namatoko: e.target.value.toUpperCase()})}
+              <input value={toko.namatenant} onChange={(e) => setToko({...toko, namatenant: e.target.value.toUpperCase()})}
                 className="input-upper w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
             </div>
             <div>
@@ -125,7 +125,7 @@ export default function Setting() {
         </div>
 
         {/* Ganti Password & Logo */}
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4 ms-4">
           <div className="bg-white rounded-2xl p-5 border border-primary-50">
             <h3 className="text-sm font-bold text-dark-500 flex items-center gap-2 mb-4">
               <Key className="w-4 h-4 text-amber-500" /> Ganti Password

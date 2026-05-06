@@ -31,7 +31,7 @@ export default function Dashboard() {
   const maxChartVal = Math.max(...chart.map((c) => parseFloat(c.total || 0)), 1);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ms-4 mt-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Dashboard</h2>
@@ -78,7 +78,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4 ms-4">
           <div className="bg-white rounded-2xl p-5 border border-primary-50 card-hover animate-in stagger-3">
             <h3 className="text-sm font-semibold text-dark-500 mb-3 flex items-center gap-2"><Star className="w-4 h-4 text-warm-500" /> Top Produk</h3>
             <div className="space-y-2.5">

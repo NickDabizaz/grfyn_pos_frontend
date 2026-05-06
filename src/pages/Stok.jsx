@@ -194,7 +194,7 @@ export default function Stok() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4 ms-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Stok</h2>
@@ -220,7 +220,7 @@ export default function Stok() {
 
       {/* Kartu Stok */}
       {tab === 'kartu' && (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4 ms-4">
           <div className="flex gap-3 bg-white rounded-2xl p-4 border border-primary-50">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
@@ -279,7 +279,7 @@ export default function Stok() {
 
       {/* Saldo Stok */}
       {tab === 'saldo' && (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4 ms-4">
           <div className="flex items-center gap-3">
             <button onClick={() => setShowSaldoAwal(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold transition-all">
@@ -329,7 +329,7 @@ export default function Stok() {
 
       {/* Penyesuaian */}
       {tab === 'penyesuaian' && (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4 ms-4">
           <div className="flex items-center gap-3">
             <button onClick={() => setShowAdjForm(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-all">
@@ -415,7 +415,7 @@ export default function Stok() {
 
       {/* Closing */}
       {tab === 'closing' && (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4 ms-4">
           <div className="bg-white rounded-2xl p-5 border border-primary-50">
             <h3 className="text-sm font-bold text-dark-500 mb-3">Closing Baru</h3>
             <div className="flex items-end gap-4">

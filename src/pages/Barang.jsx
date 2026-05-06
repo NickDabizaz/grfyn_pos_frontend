@@ -3,16 +3,11 @@ import api from '../api/axios';
 import { formatRupiah } from '../lib/utils';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, Search, AlertTriangle, ChevronDown, ChevronUp, Download, FileText, Upload, RefreshCw } from 'lucide-react';
-import SearchableSelect from '../components/ui/SearchableSelect';
 import { usePagination } from '../hooks/usePagination';
 import Pagination from '../components/ui/Pagination';
-import { useTabView } from '../hooks/useTabView';
-import { useFormMode } from '../hooks/useFormMode';
 import { useConfirm } from '../components/ui/ConfirmDialog';
-import TabContainer from '../components/ui/TabContainer';
-import FormPanel from '../components/ui/FormPanel';
-
-const INIT = { namabarang: '', satuanbesar: '', satuansedang: '', satuankecil: '', konversi1: 0, konversi2: 0, jenis: 'BAHAN JADI', stokmin: 0, hargabeli: '', hargajual: '' };
+import useTabStore from '../store/tabStore';
+import BarangForm from './BarangForm';
 
 const downloadFile = (url, filename) => {
   api.get(url, { responseType: 'blob' }).then((r) => {
@@ -35,26 +30,24 @@ const handleImport = (url, onSuccess) => {
     formData.append('file', file);
     try {
       const { data } = await api.post(url, formData);
-      toast.success(`Import selesai: ${data.success} berhasil, ${data.errors} gagal`);
+      toast.success(`Import selesai: ${data.success} berhasil, ${data.errors?.length || 0} gagal`);
       onSuccess();
     } catch (err) { toast.error(err.response?.data?.message || 'Import gagal'); }
   };
   input.click();
 };
 
-export default function Barang() {
-  const [barang, setBarang]           = useState([]);
-  const [search, setSearch]           = useState('');
-  const [warnings, setWarnings]       = useState([]);
-  const [form, setForm]               = useState({...INIT});
+export default function Barang({ isActive, tabState, updateTabState }) {
+  const [barang, setBarang]       = useState([]);
+  const [search, setSearch]       = useState('');
+  const [warnings, setWarnings]   = useState([]);
   const [historyBeli, setHistoryBeli] = useState([]);
   const [historyJual, setHistoryJual] = useState([]);
   const [showHistory, setShowHistory] = useState(null);
   const [refreshing, setRefreshing]   = useState(false);
 
-  const { activeTab, setActiveTab } = useTabView('grid');
-  const { mode, setTambah, setUbah, resetMode, isUbah } = useFormMode();
-  const { confirm } = useConfirm();
+  const openTab = useTabStore((s) => s.openTab);
+  const confirm = useConfirm();
 
   const load = () => {
     const params = search ? { search } : {};
@@ -68,64 +61,34 @@ export default function Barang() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
-      new Promise((r) => { load(); setTimeout(r, 200); }),
+      load(),
       api.get('/barang/check-price').then((r) => setWarnings(r.data.warnings))
     ]);
     setRefreshing(false);
   };
 
-  const validateSatuan = () => {
-    const units = [form.satuanbesar, form.satuansedang, form.satuankecil].filter(u => u && u.trim());
-    const uniqueUnits = new Set(units);
-    if (units.length !== uniqueUnits.size) {
-      toast.error('Satuan tidak boleh sama! Hanya satuan terkecil yang akan disimpan.');
-      // Auto-fix: keep only satuankecil if duplicates found
-      setForm({...form, satuanbesar: '', satuansedang: ''});
-      return false;
-    }
-    return true;
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-
-    // Validate satuan before save
-    if (!validateSatuan()) return;
-
-    try {
-      if (mode.editId) {
-        await api.put(`/barang/${mode.editId}`, form);
-        toast.success('Barang diupdate');
-      } else {
-        await api.post('/barang', form);
-        toast.success('Barang ditambah');
-      }
-      resetMode();
-      setForm({...INIT});
-      setActiveTab('grid');
-      load();
-    } catch (err) { toast.error(err.response?.data?.message || 'Gagal'); }
+  const handleTambah = () => {
+    openTab({
+      label: 'Barang',
+      icon: Plus,
+      component: BarangForm,
+      props: { mode: 'add', onSuccess: load },
+      type: 'form_add',
+    });
   };
 
   const handleEdit = (b) => {
-    setUbah(b.idbarang);
-    setForm({
-      namabarang  : b.namabarang,
-      satuanbesar : b.satuanbesar || '',
-      satuansedang: b.satuansedang || '',
-      satuankecil : b.satuankecil || '',
-      konversi1   : b.konversi1 || 0,
-      konversi2   : b.konversi2 || 0,
-      jenis       : b.jenis || 'BAHAN JADI',
-      stokmin     : b.stokmin || 0,
-      hargabeli   : b.hargabeli_terbaru || '',
-      hargajual   : b.hargajual_terbaru || ''
+    openTab({
+      label: `${b.kodebarang}`,
+      icon: Pencil,
+      component: BarangForm,
+      props: { mode: 'edit', idbarang: b.idbarang, data: b, onSuccess: load },
+      type: 'form_edit',
     });
-    setActiveTab('form');
   };
 
   const handleDelete = async (id) => {
-    const confirmed = await confirm('Hapus barang ini?');
+    const confirmed = await confirm({ message: 'Hapus barang ini?' });
     if (!confirmed) return;
     try {
       await api.delete(`/barang/${id}`);
@@ -142,32 +105,11 @@ export default function Barang() {
     setShowHistory(showHistory === id ? null : id);
   };
 
-  const handleTambah = () => {
-    setTambah();
-    setForm({...INIT});
-    setActiveTab('form');
-  };
-
-  const handleBatal = () => {
-    resetMode();
-    setForm({...INIT});
-    setActiveTab('grid');
-  };
-
-  // Jenis options based on mode
-  const jenisOptions = isUbah
-    ? [
-        { value: 'BAHAN BAKU', label: 'BAHAN BAKU' },
-        { value: 'BAHAN SETENGAH JADI', label: 'BAHAN SETENGAH JADI' },
-        { value: 'BAHAN JADI', label: 'BAHAN JADI' }
-      ]
-    : [{ value: 'BAHAN JADI', label: 'BAHAN JADI' }];
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-dark-500">Barang</h2>
+          <h2 className="text-xl font-bold text-dark-500">Barang</h2>
           <p className="text-sm text-dark-300">Manajemen produk dan harga</p>
         </div>
         <div className="flex items-center gap-2">
@@ -196,204 +138,114 @@ export default function Barang() {
       </div>
 
       {warnings > 0 && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">
+        <div className="flex items-center gap-2 mx-6 mb-2 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">
           <AlertTriangle className="w-4 h-4" /> Ada {warnings} barang dengan harga jual di bawah harga beli!
         </div>
       )}
 
-      <TabContainer activeTab={activeTab} onTabChange={setActiveTab}>
-        {/* TAB 1: GRID */}
-        <TabContainer.Tab id="grid" label="Daftar Barang">
-          <div className="space-y-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value.toUpperCase())}
-                placeholder="Cari barang (kode/nama)..." className="input-upper w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-            </div>
+      <div className="flex-1 overflow-auto px-6 pb-4">
+        <div className="relative max-w-md mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value.toUpperCase())}
+            placeholder="Cari barang (kode/nama)..." className="input-upper w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+        </div>
 
-            <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
-              <div className="overflow-x-auto scrollbar-thin">
-                <table className="w-full min-w-[900px]">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="border-b border-primary-50 bg-warm-50/50">
-                      <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Kode</th>
-                      <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Nama Barang</th>
-                      <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Sat Bsr</th>
-                      <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Sat Sdg</th>
-                      <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Sat Kcl</th>
-                      <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300 w-16">K1</th>
-                      <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300 w-16">K2</th>
-                      <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Jenis</th>
-                      <th className="text-right   px-3 py-3 text-xs font-semibold text-dark-300">Harga Beli</th>
-                      <th className="text-right   px-3 py-3 text-xs font-semibold text-dark-300">Harga Jual</th>
-                      <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300">Stok Min</th>
-                      <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300 w-24">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedItems.map((b) => (
-                      <>
-                      <tr key={b.idbarang} className="border-b border-primary-50/50 hover:bg-warm-50/30 transition-colors text-sm">
-                        <td className="px-3 py-3 text-xs font-mono text-dark-300">{b.kodebarang}</td>
-                        <td className="px-3 py-3 font-medium text-dark-500">{b.namabarang}</td>
-                        <td className="px-3 py-3 text-dark-400">{b.satuanbesar || '-'}</td>
-                        <td className="px-3 py-3 text-dark-400">{b.satuansedang || '-'}</td>
-                        <td className="px-3 py-3 text-dark-400">{b.satuankecil || '-'}</td>
-                        <td className="px-3 py-3 text-center text-dark-300">{b.konversi1 || 0}</td>
-                        <td className="px-3 py-3 text-center text-dark-300">{b.konversi2 || 0}</td>
-                        <td className="px-3 py-3">
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-lg ${
-                            b.jenis === 'BAHAN BAKU' ? 'bg-amber-50 text-amber-700' :
-                            b.jenis === 'BAHAN SETENGAH JADI' ? 'bg-blue-50 text-blue-700' :
-                            'bg-emerald-50 text-emerald-700'
-                          }`}>
-                            {b.jenis || '-'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-right font-mono text-dark-400">{formatRupiah(b.hargabeli_terbaru)}</td>
-                        <td className={`px-3 py-3 text-right font-mono font-semibold ${b.hargajual_terbaru && b.hargabeli_terbaru && parseFloat(b.hargajual_terbaru) < parseFloat(b.hargabeli_terbaru) ? 'text-red-500' : 'text-accent-600'}`}>
-                          {formatRupiah(b.hargajual_terbaru)}
-                        </td>
-                        <td className="px-3 py-3 text-center text-dark-400">{b.stokmin}</td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => loadHistory(b.idbarang)} className="p-1.5 rounded-lg hover:bg-accent-50 text-dark-300 hover:text-accent-500" title="Lihat history harga">
-                              {showHistory === b.idbarang ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                            </button>
-                            <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500" title="Edit barang"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleDelete(b.idbarang)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500" title="Hapus barang"><Trash2 className="w-3.5 h-3.5" /></button>
+        <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full min-w-[900px]">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-primary-50 bg-warm-50/50">
+                  <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Kode</th>
+                  <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Nama Barang</th>
+                  <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Sat Bsr</th>
+                  <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Sat Sdg</th>
+                  <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Sat Kcl</th>
+                  <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300 w-16">K1</th>
+                  <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300 w-16">K2</th>
+                  <th className="text-left    px-3 py-3 text-xs font-semibold text-dark-300">Jenis</th>
+                  <th className="text-right   px-3 py-3 text-xs font-semibold text-dark-300">Harga Beli</th>
+                  <th className="text-right   px-3 py-3 text-xs font-semibold text-dark-300">Harga Jual</th>
+                  <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300">Stok Min</th>
+                  <th className="text-center  px-3 py-3 text-xs font-semibold text-dark-300 w-24">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.map((b) => (
+                  <>
+                  <tr key={b.idbarang} className="border-b border-primary-50/50 hover:bg-warm-50/30 transition-colors text-sm">
+                    <td className="px-3 py-3 text-xs font-mono text-dark-300">{b.kodebarang}</td>
+                    <td className="px-3 py-3 font-medium text-dark-500">{b.namabarang}</td>
+                    <td className="px-3 py-3 text-dark-400">{b.satuanbesar || '-'}</td>
+                    <td className="px-3 py-3 text-dark-400">{b.satuansedang || '-'}</td>
+                    <td className="px-3 py-3 text-dark-400">{b.satuankecil || '-'}</td>
+                    <td className="px-3 py-3 text-center text-dark-300">{b.konversi1 || 0}</td>
+                    <td className="px-3 py-3 text-center text-dark-300">{b.konversi2 || 0}</td>
+                    <td className="px-3 py-3">
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-lg ${
+                        b.jenis === 'BAHAN BAKU' ? 'bg-amber-50 text-amber-700' :
+                        b.jenis === 'BAHAN SETENGAH JADI' ? 'bg-blue-50 text-blue-700' :
+                        'bg-emerald-50 text-emerald-700'
+                      }`}>
+                        {b.jenis || '-'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-right font-mono text-dark-400">{formatRupiah(b.hargabeli_terbaru)}</td>
+                    <td className={`px-3 py-3 text-right font-mono font-semibold ${b.hargajual_terbaru && b.hargabeli_terbaru && parseFloat(b.hargajual_terbaru) < parseFloat(b.hargabeli_terbaru) ? 'text-red-500' : 'text-accent-600'}`}>
+                      {formatRupiah(b.hargajual_terbaru)}
+                    </td>
+                    <td className="px-3 py-3 text-center text-dark-400">{b.stokmin}</td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => loadHistory(b.idbarang)} className="p-1.5 rounded-lg hover:bg-accent-50 text-dark-300 hover:text-accent-500" title="Lihat history harga">
+                          {showHistory === b.idbarang ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                        <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500" title="Edit barang"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDelete(b.idbarang)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500" title="Hapus barang"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                  {showHistory === b.idbarang && (
+                    <tr key={`h-${b.idbarang}`}>
+                      <td colSpan={12} className="px-4 py-3 bg-warm-50/30">
+                        <div className="grid grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <p className="font-semibold text-dark-400 mb-2">History Harga Beli</p>
+                            {historyBeli.length === 0 ? (
+                              <p className="text-dark-300 py-2">Belum ada history</p>
+                            ) : (
+                              historyBeli.map((h) => (
+                                <div key={h.idhargabeli} className="flex justify-between py-1 border-b border-primary-50">
+                                  <span className="text-dark-300">{h.tgltrans?.slice(0,10)}</span>
+                                  <span className="font-mono text-dark-500">{formatRupiah(h.hargabeli)}</span>
+                                </div>
+                              ))
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                      {showHistory === b.idbarang && (
-                        <tr key={`h-${b.idbarang}`}>
-                          <td colSpan={12} className="px-4 py-3 bg-warm-50/30">
-                            <div className="grid grid-cols-2 gap-4 text-xs">
-                              <div>
-                                <p className="font-semibold text-dark-400 mb-2">History Harga Beli</p>
-                                {historyBeli.length === 0 ? (
-                                  <p className="text-dark-300 py-2">Belum ada history</p>
-                                ) : (
-                                  historyBeli.map((h) => (
-                                    <div key={h.idhargabeli} className="flex justify-between py-1 border-b border-primary-50">
-                                      <span className="text-dark-300">{h.tgltrans?.slice(0,10)}</span>
-                                      <span className="font-mono text-dark-500">{formatRupiah(h.hargabeli)}</span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-dark-400 mb-2">History Harga Jual</p>
-                                {historyJual.length === 0 ? (
-                                  <p className="text-dark-300 py-2">Belum ada history</p>
-                                ) : (
-                                  historyJual.map((h) => (
-                                    <div key={h.idhargajual} className="flex justify-between py-1 border-b border-primary-50">
-                                      <span className="text-dark-300">{h.tgltrans?.slice(0,10)}</span>
-                                      <span className="font-mono text-dark-500">{formatRupiah(h.hargajual)}</span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                      </>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Pagination page={page} totalPages={totalPages} setPage={setPage} />
-            </div>
-          </div>
-        </TabContainer.Tab>
-
-        {/* TAB 2: FORM */}
-        <TabContainer.Tab id="form" label={mode.editId ? "Edit Barang" : "Tambah Barang"}>
-          <FormPanel mode={mode.editId ? 'ubah' : 'tambah'}>
-            <form onSubmit={handleSave} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-dark-400 mb-1">Nama Barang</label>
-                <input value={form.namabarang} onChange={(e) => setForm({...form, namabarang: e.target.value.toUpperCase()})}
-                  className="input-upper w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" required />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Satuan Besar</label>
-                  <input value={form.satuanbesar} onChange={(e) => setForm({...form, satuanbesar: e.target.value.toUpperCase()})}
-                    className="input-upper w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" placeholder="SATUAN BESAR" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Satuan Sedang</label>
-                  <input value={form.satuansedang} onChange={(e) => setForm({...form, satuansedang: e.target.value.toUpperCase()})}
-                    className="input-upper w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" placeholder="SATUAN SEDANG" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Satuan Kecil</label>
-                  <input value={form.satuankecil} onChange={(e) => setForm({...form, satuankecil: e.target.value.toUpperCase()})}
-                    className="input-upper w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" placeholder="SATUAN KECIL" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">
-                    Konversi 1 <span className="text-[10px] text-dark-200">(Satuan Besar → Satuan Sedang)</span>
-                  </label>
-                  <input type="number" value={form.konversi1} onChange={(e) => setForm({...form, konversi1: e.target.value})}
-                    className="w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" placeholder="36" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">
-                    Konversi 2 <span className="text-[10px] text-dark-200">(Satuan Sedang → Satuan Kecil)</span>
-                  </label>
-                  <input type="number" value={form.konversi2} onChange={(e) => setForm({...form, konversi2: e.target.value})}
-                    className="w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" placeholder="1000" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Jenis</label>
-                  <SearchableSelect
-                    value={form.jenis}
-                    onChange={(val) => setForm({...form, jenis: val})}
-                    options={jenisOptions}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Stok Minimum (Satuan Terkecil)</label>
-                  <input type="number" value={form.stokmin} onChange={(e) => setForm({...form, stokmin: e.target.value})}
-                    className="w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Harga Beli</label>
-                  <input type="number" value={form.hargabeli} onChange={(e) => setForm({...form, hargabeli: e.target.value})}
-                    className="w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-dark-400 mb-1">Harga Jual</label>
-                  <input type="number" value={form.hargajual} onChange={(e) => setForm({...form, hargajual: e.target.value})}
-                    className="w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-                  {form.hargabeli && form.hargajual && parseFloat(form.hargajual) < parseFloat(form.hargabeli) && (
-                    <p className="text-[10px] text-red-500 mt-1">Harga jual di bawah harga beli!</p>
+                          <div>
+                            <p className="font-semibold text-dark-400 mb-2">History Harga Jual</p>
+                            {historyJual.length === 0 ? (
+                              <p className="text-dark-300 py-2">Belum ada history</p>
+                            ) : (
+                              historyJual.map((h) => (
+                                <div key={h.idhargajual} className="flex justify-between py-1 border-b border-primary-50">
+                                  <span className="text-dark-300">{h.tgltrans?.slice(0,10)}</span>
+                                  <span className="font-mono text-dark-500">{formatRupiah(h.hargajual)}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={handleBatal} className="flex-1 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400 hover:bg-warm-50">Batal</button>
-                <button type="submit" className="flex-1 py-2.5 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600">Simpan</button>
-              </div>
-            </form>
-          </FormPanel>
-        </TabContainer.Tab>
-      </TabContainer>
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+        </div>
+      </div>
     </div>
   );
 }

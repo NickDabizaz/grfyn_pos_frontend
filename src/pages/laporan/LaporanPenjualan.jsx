@@ -31,7 +31,7 @@ export default function LaporanPenjualan() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4 ms-4">
       <div>
         <h2 className="text-2xl font-bold text-dark-500">Laporan Penjualan</h2>
         <p className="text-sm text-dark-300">Generate & cetak laporan penjualan</p>

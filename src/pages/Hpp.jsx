@@ -74,7 +74,7 @@ export default function Hpp() {
 
   if (detail) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 mt-4 ms-4">
         <div className="flex items-center gap-3">
           <button onClick={() => setDetail(null)}
             className="flex items-center gap-2 px-3 py-2 rounded-xl border border-primary-100 text-dark-400 hover:bg-warm-50 text-sm font-medium transition-all">
@@ -156,7 +156,7 @@ export default function Hpp() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4 ms-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Hitung HPP</h2>
@@ -240,7 +240,7 @@ export default function Hpp() {
               </h3>
               <button onClick={() => setShowForm(false)} className="text-dark-300 hover:text-dark-500"><X className="w-5 h-5" /></button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 mt-4 ms-4">
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1">Periode Bulan</label>
                 <div className="relative">

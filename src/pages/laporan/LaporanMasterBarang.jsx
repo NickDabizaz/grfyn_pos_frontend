@@ -19,7 +19,7 @@ export default function LaporanMasterBarang() {
   const handlePrint = () => window.print();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4 ms-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Laporan Master Barang</h2>
