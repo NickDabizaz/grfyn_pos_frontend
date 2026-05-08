@@ -66,7 +66,7 @@ export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
     setLoading(true);
     try {
       const payload = {
-        username: username.toUpperCase(),
+        username: username,
         namauser,
         email: email || null,
         hp: hp || null,
@@ -107,7 +107,7 @@ export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Username *</label>
-              <input value={username} onChange={(e) => setUsername(e.target.value.toUpperCase())} className={inputClass} disabled={isEdit} />
+              <input value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} disabled={isEdit} />
             </div>
             {!isEdit && (
               <div>
