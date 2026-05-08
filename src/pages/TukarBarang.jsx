@@ -3,17 +3,17 @@ import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 import { formatRupiah, today } from '../lib/utils';
 import toast from 'react-hot-toast';
-import { Plus, Search, RefreshCw, Printer, Pencil, Ban } from 'lucide-react';
+import { Plus, Search, RefreshCw, Printer, Pencil, Repeat } from 'lucide-react';
 import { usePagination } from '../hooks/usePagination';
 import Pagination from '../components/ui/Pagination';
 import useTabStore from '../store/tabStore';
-import PenjualanForm from './PenjualanForm';
+import TukarBarangForm from './TukarBarangForm';
 
-function printFaktur(data, user) {
-  const items = data.items || [];
-  const ppnTotal = items.reduce((s, i) => s + parseFloat(i.ppn || 0), 0);
+function printNotaTukar(data, user) {
+  const kembali = data.items_kembali || [];
+  const baru    = data.items_baru || [];
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Faktur Penjualan - ${data.kodejual}</title>
+<title>Nota Tukar Barang - ${data.kodetukarbarang}</title>
 <style>
   body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#333}
   h2{text-align:center;margin:0 0 2px}
@@ -24,43 +24,40 @@ function printFaktur(data, user) {
   th{background:#f4f4f4;padding:6px 8px;text-align:left;border-bottom:2px solid #ddd;font-size:11px}
   td{padding:5px 8px;border-bottom:1px solid #eee;font-size:11px}
   .r{text-align:right} .c{text-align:center}
-  .totals{margin-top:14px;text-align:right}
-  .grand{font-size:14px;font-weight:bold;margin-top:4px}
+  .section-title{margin-top:16px;font-weight:bold;font-size:13px}
   @media print{body{margin:0}}
 </style></head><body>
 <h2>${user?.namatenant || 'GRFYN POS'}</h2>
-<p class="center" style="color:#888;margin:0 0 12px">FAKTUR PENJUALAN</p>
+<p class="center" style="color:#888;margin:0 0 12px">NOTA TUKAR BARANG</p>
 <div class="info">
-  <span>Kode Jual</span><span>${data.kodejual}</span>
+  <span>Kode Tukar</span><span>${data.kodetukarbarang}</span>
   <span>Tanggal</span><span>${String(data.tgltrans || '').slice(0, 10)}</span>
   <span>Customer</span><span>${data.namacustomer || '-'}</span>
-  <span>Status</span><span>${data.status || '-'}</span>
 </div>
+<p class="section-title">Barang Dikembalikan</p>
 <table><thead><tr>
   <th style="width:32px">No</th><th>Kode</th><th>Nama Barang</th>
-  <th class="c" style="width:60px">Sat</th>
-  <th class="r" style="width:50px">Jml</th>
-  <th class="r" style="width:90px">Harga</th>
-  <th class="r" style="width:60px">Diskon</th>
-  <th class="r" style="width:80px">PPN</th>
+  <th class="r" style="width:50px">Jml</th><th class="r" style="width:90px">Harga</th>
+  <th class="c" style="width:140px">Tindak Lanjut</th>
+</tr></thead><tbody>
+${kembali.map((item, i) => `<tr>
+  <td class="c">${i + 1}</td><td>${item.kodebarang || ''}</td><td>${item.namabarang || ''}</td>
+  <td class="r">${item.jml}</td><td class="r">${Number(item.harga).toLocaleString('id-ID')}</td>
+  <td class="c">${item.tindaklanjut || '-'}</td>
+</tr>`).join('')}
+</tbody></table>
+<p class="section-title">Barang Pengganti</p>
+<table><thead><tr>
+  <th style="width:32px">No</th><th>Kode</th><th>Nama Barang</th>
+  <th class="r" style="width:50px">Jml</th><th class="r" style="width:90px">Harga</th>
   <th class="r" style="width:100px">Subtotal</th>
 </tr></thead><tbody>
-${items.map((item, i) => `<tr>
-  <td class="c">${i + 1}</td>
-  <td>${item.kodebarang || ''}</td>
-  <td>${item.namabarang || ''}</td>
-  <td class="c">${item.satuan || item.satuankecil || ''}</td>
-  <td class="r">${item.jml}</td>
-  <td class="r">${Number(item.harga).toLocaleString('id-ID')}</td>
-  <td class="r">${Number(item.diskon || 0).toLocaleString('id-ID')}</td>
-  <td class="r">${Number(item.ppn || 0).toLocaleString('id-ID')}</td>
+${baru.map((item, i) => `<tr>
+  <td class="c">${i + 1}</td><td>${item.kodebarang || ''}</td><td>${item.namabarang || ''}</td>
+  <td class="r">${item.jml}</td><td class="r">${Number(item.harga).toLocaleString('id-ID')}</td>
   <td class="r">${Number(item.subtotal).toLocaleString('id-ID')}</td>
 </tr>`).join('')}
 </tbody></table>
-<div class="totals">
-  <div>Total PPN: <strong>${ppnTotal.toLocaleString('id-ID')}</strong></div>
-  <div class="grand">Grand Total: ${Number(data.grandtotal).toLocaleString('id-ID')}</div>
-</div>
 </body></html>`;
   const w = window.open('', '_blank', 'width=820,height=640');
   w.document.write(html);
@@ -104,97 +101,71 @@ function BrowseCustomerModal({ onSelect, onClose }) {
   );
 }
 
-function BrowseLokasiModal({ onSelect, onClose }) {
-  const [lokasiList, setLokasiList] = useState([]);
-  useEffect(() => { api.get('/lokasi').then(r => setLokasiList(r.data)); }, []);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Lokasi</h3>
-        </div>
-        <div className="p-4 space-y-0.5 max-h-64 overflow-y-auto scrollbar-thin">
-          {lokasiList.map(l => (
-            <button key={l.idlokasi} onClick={() => onSelect(l)}
-              className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-              <p className="text-sm font-semibold text-dark-500">{l.namalokasi}</p>
-              <p className="text-xs text-dark-300">{l.kodelokasi}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function Penjualan({ isActive }) {
+export default function TukarBarang({ isActive }) {
   const user    = useAuthStore(s => s.user);
   const openTab = useTabStore(s => s.openTab);
 
-  const [jual, setJual]             = useState([]);
+  const [tukar, setTukar]             = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const [filterKode, setFilterKode]         = useState('');
   const [filterCustomer, setFilterCustomer] = useState(null);
-  const [filterLokasi, setFilterLokasi]     = useState(null);
   const [tglAwal, setTglAwal]               = useState(today());
   const [tglAkhir, setTglAkhir]             = useState(today());
 
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showLokasiModal, setShowLokasiModal]     = useState(false);
 
-  const loadJual = useCallback(() => {
+  const loadTukar = useCallback(() => {
     const params = {};
     if (filterKode)     params.search     = filterKode;
     if (filterCustomer) params.idcustomer = filterCustomer.idcustomer;
-    if (filterLokasi)   params.idlokasi   = filterLokasi.idlokasi;
     params.tglwal   = tglAwal;
     params.tglakhir = tglAkhir;
-    api.get('/jual', { params }).then(r => setJual(r.data)).catch(() => {});
-  }, [filterKode, filterCustomer, filterLokasi, tglAwal, tglAkhir]);
+    api.get('/tukarbarang', { params }).then(r => setTukar(r.data)).catch(() => {});
+  }, [filterKode, filterCustomer, tglAwal, tglAkhir]);
 
-  useEffect(() => { loadJual(); }, [loadJual]);
+  useEffect(() => { loadTukar(); }, [loadTukar]);
 
-  const { page, setPage, totalPages, paginatedItems, resetPage } = usePagination(jual, 20);
-  useEffect(() => { resetPage(); }, [filterKode, filterCustomer, filterLokasi, tglAwal, tglAkhir]);
+  const { page, setPage, totalPages, paginatedItems, resetPage } = usePagination(tukar, 20);
+  useEffect(() => { resetPage(); }, [filterKode, filterCustomer, tglAwal, tglAkhir]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadJual();
+    loadTukar();
     setTimeout(() => setRefreshing(false), 300);
   };
 
   const handleTambah = () => {
-    openTab({ label: 'Penjualan Baru', icon: Plus, component: PenjualanForm, props: { onSuccess: loadJual }, type: 'form_add' });
+    openTab({ label: 'Tukar Barang Baru', icon: Repeat, component: TukarBarangForm, props: { onSuccess: loadTukar }, type: 'form_add' });
   };
 
-  const handleEdit = async (j) => {
-    if (j.status === 'VOID') return toast.error('Penjualan VOID tidak dapat diedit');
+  const handleEdit = async (t) => {
+    if (t.status === 'VOID') return toast.error('Tukar barang VOID tidak dapat diedit');
     try {
-      const { data } = await api.get(`/jual/${j.idjual}`);
+      const { data } = await api.get(`/tukarbarang/${t.idtukarbarang}`);
       openTab({
-        label: `Edit ${j.kodejual}`,
+        label: `Edit ${t.kodetukarbarang}`,
         icon: Pencil,
-        component: PenjualanForm,
-        props: { onSuccess: loadJual, editData: data },
+        component: TukarBarangForm,
+        props: { onSuccess: loadTukar, editData: data },
         type: 'form_edit',
       });
     } catch {
-      toast.error('Gagal memuat data penjualan');
+      toast.error('Gagal memuat data tukar barang');
     }
   };
 
-  const handleRowClick = (j) => setSelectedId(j.idjual === selectedId ? null : j.idjual);
+  const handleRowClick = (t) => setSelectedId(t.idtukarbarang === selectedId ? null : t.idtukarbarang);
 
   const handleCancel = async (e, id) => {
     e.stopPropagation();
-    if (!confirm('Batalkan penjualan ini? Stok akan dikembalikan.')) return;
+    if (!confirm('Batalkan tukar barang ini? Stok akan dikembalikan seperti semula.')) return;
     try {
-      await api.put(`/jual/${id}/cancel`);
-      toast.success('Penjualan dibatalkan');
+      await api.put(`/tukarbarang/${id}/cancel`);
+      toast.success('Tukar barang dibatalkan');
       if (selectedId === id) setSelectedId(null);
-      loadJual();
+      loadTukar();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal');
     }
@@ -203,23 +174,22 @@ export default function Penjualan({ isActive }) {
   const handleCetak = async () => {
     if (!selectedId) return;
     try {
-      const { data } = await api.get(`/jual/${selectedId}`);
-      printFaktur(data, user);
+      const { data } = await api.get(`/tukarbarang/${selectedId}`);
+      printNotaTukar(data, user);
     } catch {
       toast.error('Gagal memuat data untuk cetak');
     }
   };
 
-  const selectedRow = jual.find(j => j.idjual === selectedId);
+  const selectedRow = tukar.find(t => t.idtukarbarang === selectedId);
 
   return (
     <div className="flex flex-col h-full">
 
-      {/* Toolbar */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-dark-500">Penjualan</h2>
-          <p className="text-sm text-dark-300">Catat transaksi penjualan ke customer</p>
+          <h2 className="text-xl font-bold text-dark-500">Tukar Barang</h2>
+          <p className="text-sm text-dark-300">Catat penukaran / penggantian barang dari customer</p>
         </div>
         <div className="flex items-center gap-2">
           {selectedRow && selectedRow.status !== 'VOID' && (
@@ -230,7 +200,7 @@ export default function Penjualan({ isActive }) {
           )}
           <button onClick={handleTambah}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
-            <Plus className="w-4 h-4" /> Penjualan Baru
+            <Plus className="w-4 h-4" /> Tukar Barang Baru
           </button>
           <button onClick={handleRefresh} disabled={refreshing}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400 hover:bg-warm-50">
@@ -239,12 +209,11 @@ export default function Penjualan({ isActive }) {
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="px-6 pb-3 shrink-0">
-        <div className="bg-white rounded-2xl border border-primary-50 p-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="bg-white rounded-2xl border border-primary-50 p-3 grid grid-cols-2 gap-3 md:grid-cols-3">
 
           <div>
-            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Kode Jual</label>
+            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Kode Tukar</label>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-dark-300" />
               <input type="text" value={filterKode}
@@ -254,7 +223,6 @@ export default function Penjualan({ isActive }) {
             </div>
           </div>
 
-          {/* Customer */}
           <div>
             <label className="block text-[10px] font-semibold text-dark-300 mb-1">Customer</label>
             <div className="flex gap-1.5">
@@ -275,28 +243,6 @@ export default function Penjualan({ isActive }) {
             </div>
           </div>
 
-          {/* Lokasi */}
-          <div>
-            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Lokasi</label>
-            <div className="flex gap-1.5">
-              <div className="flex-1 flex items-center px-2.5 py-2 rounded-lg border border-primary-100 bg-warm-50/40 text-xs min-h-[34px] overflow-hidden">
-                {filterLokasi
-                  ? <span className="text-dark-500 truncate">{filterLokasi.namalokasi}</span>
-                  : <span className="text-dark-300">Semua lokasi</span>
-                }
-              </div>
-              <button onClick={() => setShowLokasiModal(true)}
-                className="px-2.5 py-1.5 rounded-lg border border-primary-100 text-[10px] font-semibold text-dark-400 hover:bg-warm-50 shrink-0">
-                Browse
-              </button>
-              {filterLokasi && (
-                <button onClick={() => setFilterLokasi(null)}
-                  className="px-2 py-1.5 rounded-lg border border-red-100 text-[10px] text-red-400 hover:bg-red-50 shrink-0">&times;</button>
-              )}
-            </div>
-          </div>
-
-          {/* Tanggal */}
           <div>
             <label className="block text-[10px] font-semibold text-dark-300 mb-1">Tanggal</label>
             <div className="flex items-center gap-1.5">
@@ -311,13 +257,12 @@ export default function Penjualan({ isActive }) {
         </div>
       </div>
 
-      {/* Grid */}
       <div className="flex-1 overflow-auto px-6 pb-4">
         <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
           {selectedRow && (
             <div className="px-4 py-2 bg-primary-50/60 border-b border-primary-100 flex items-center gap-2 text-xs text-primary-600">
               <span className="font-semibold">Dipilih:</span>
-              <span className="font-mono font-bold">{selectedRow.kodejual}</span>
+              <span className="font-mono font-bold">{selectedRow.kodetukarbarang}</span>
               <span className="text-dark-300">&mdash; {selectedRow.namacustomer || 'Tanpa Customer'}</span>
               <span className="ml-auto text-[10px] text-dark-300">Klik 2&times; baris untuk edit</span>
             </div>
@@ -329,49 +274,41 @@ export default function Penjualan({ isActive }) {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Customer</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Lokasi</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-dark-300">Total</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Jenis</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Status</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-20">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedItems.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-dark-300">Tidak ada data penjualan</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-dark-300">Tidak ada data tukar barang</td></tr>
                 )}
-                {paginatedItems.map((j) => {
-                  const isSelected = selectedId === j.idjual;
+                {paginatedItems.map((t) => {
+                  const isSelected = selectedId === t.idtukarbarang;
                   return (
-                    <tr key={j.idjual}
-                      onClick={() => handleRowClick(j)}
-                      onDoubleClick={() => handleEdit(j)}
+                    <tr key={t.idtukarbarang}
+                      onClick={() => handleRowClick(t)}
+                      onDoubleClick={() => handleEdit(t)}
                       className={`border-b border-primary-50/50 text-sm cursor-pointer select-none transition-colors ${
-                        j.status === 'VOID'
+                        t.status === 'VOID'
                           ? 'bg-red-50/30 opacity-60'
                           : isSelected
                             ? 'bg-primary-50 ring-1 ring-inset ring-primary-200'
                             : 'hover:bg-warm-50/30'
                       }`}>
-                      <td className="px-4 py-3 text-xs font-mono font-semibold text-dark-400">{j.kodejual}</td>
-                      <td className="px-4 py-3 text-dark-400 text-xs">{String(j.tgltrans || '').slice(0, 10)}</td>
-                      <td className="px-4 py-3 text-dark-500">{j.namacustomer || '-'}</td>
-                      <td className="px-4 py-3 text-dark-400 text-xs">{j.namalokasi || '-'}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-accent-600">{formatRupiah(j.grandtotal)}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600">{j.jenis || 'JUAL'}</span>
-                      </td>
+                      <td className="px-4 py-3 text-xs font-mono font-semibold text-dark-400">{t.kodetukarbarang}</td>
+                      <td className="px-4 py-3 text-dark-400 text-xs">{String(t.tgltrans || '').slice(0, 10)}</td>
+                      <td className="px-4 py-3 text-dark-500">{t.namacustomer || '-'}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
-                          j.status === 'VOID' ? 'bg-red-50 text-red-600' : j.status === 'LUNAS' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                          t.status === 'VOID' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
                         }`}>
-                          {j.status}
+                          {t.status === 'VOID' ? 'VOID' : 'AKTIF'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {j.status !== 'VOID' && (
+                        {t.status !== 'VOID' && (
                           <button
-                            onClick={(e) => handleCancel(e, j.idjual)}
+                            onClick={(e) => handleCancel(e, t.idtukarbarang)}
                             className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
                             Hapus
                           </button>
@@ -391,12 +328,6 @@ export default function Penjualan({ isActive }) {
         <BrowseCustomerModal
           onSelect={c => { setFilterCustomer(c); setShowCustomerModal(false); }}
           onClose={() => setShowCustomerModal(false)}
-        />
-      )}
-      {showLokasiModal && (
-        <BrowseLokasiModal
-          onSelect={l => { setFilterLokasi(l); setShowLokasiModal(false); }}
-          onClose={() => setShowLokasiModal(false)}
         />
       )}
     </div>

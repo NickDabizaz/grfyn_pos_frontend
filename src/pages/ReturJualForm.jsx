@@ -1,16 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 import { formatRupiah, today } from '../lib/utils';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Search, Trash2, MapPin, Users, Plus, Printer, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Users, Plus, Printer } from 'lucide-react';
 import useTabStore from '../store/tabStore';
 
-function printFaktur(data, user) {
+function printNotaRetur(data, user) {
   const items = data.items || [];
-  const ppnTotal = items.reduce((s, i) => s + parseFloat(i.ppn || 0), 0);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Faktur Penjualan - ${data.kodejual}</title>
+<title>Nota Retur - ${data.kodereturjual}</title>
 <style>
   body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#333}
   h2{text-align:center;margin:0 0 2px}
@@ -26,37 +25,32 @@ function printFaktur(data, user) {
   @media print{body{margin:0}}
 </style></head><body>
 <h2>${user?.namatenant || 'GRFYN POS'}</h2>
-<p class="center" style="color:#888;margin:0 0 12px">FAKTUR PENJUALAN</p>
+<p class="center" style="color:#888;margin:0 0 12px">NOTA RETUR PENJUALAN</p>
 <div class="info">
-  <span>Kode Jual</span><span>${data.kodejual}</span>
+  <span>Kode Retur</span><span>${data.kodereturjual}</span>
   <span>Tanggal</span><span>${String(data.tgltrans || '').slice(0, 10)}</span>
   <span>Customer</span><span>${data.namacustomer || '-'}</span>
-  <span>Lokasi</span><span>${data.namalokasi || '-'}</span>
+  <span>Kode Jual</span><span>${data.kodejual || '-'}</span>
 </div>
 <table><thead><tr>
   <th style="width:32px">No</th><th>Kode</th><th>Nama Barang</th>
-  <th class="c" style="width:60px">Sat</th>
   <th class="r" style="width:50px">Jml</th>
   <th class="r" style="width:90px">Harga</th>
-  <th class="r" style="width:60px">Diskon</th>
-  <th class="r" style="width:80px">PPN</th>
   <th class="r" style="width:100px">Subtotal</th>
+  <th class="c" style="width:140px">Tindak Lanjut</th>
 </tr></thead><tbody>
 ${items.map((item, i) => `<tr>
   <td class="c">${i + 1}</td>
   <td>${item.kodebarang || ''}</td>
   <td>${item.namabarang || ''}</td>
-  <td class="c">${item.satuan || item.satuankecil || ''}</td>
   <td class="r">${item.jml}</td>
   <td class="r">${Number(item.harga).toLocaleString('id-ID')}</td>
-  <td class="r">${Number(item.diskon || 0).toLocaleString('id-ID')}</td>
-  <td class="r">${Number(item.ppn || 0).toLocaleString('id-ID')}</td>
   <td class="r">${Number(item.subtotal).toLocaleString('id-ID')}</td>
+  <td class="c">${item.tindaklanjut || '-'}${item.namabarang2nd ? ' \u2192 ' + item.namabarang2nd : ''}</td>
 </tr>`).join('')}
 </tbody></table>
 <div class="totals">
-  <div>Total PPN: <strong>${ppnTotal.toLocaleString('id-ID')}</strong></div>
-  <div class="grand">Grand Total: ${Number(data.grandtotal).toLocaleString('id-ID')}</div>
+  <div class="grand">Total: ${Number(data.total).toLocaleString('id-ID')}</div>
 </div>
 </body></html>`;
   const w = window.open('', '_blank', 'width=820,height=640');
@@ -86,9 +80,7 @@ function BrowseCustomerModal({ onSelect, onClose }) {
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
           </div>
           <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-0.5">
-            {customers.length === 0 && (
-              <p className="text-sm text-dark-300 text-center py-6">Tidak ada customer ditemukan</p>
-            )}
+            {customers.length === 0 && <p className="text-sm text-dark-300 text-center py-6">Tidak ada customer</p>}
             {customers.map(c => (
               <button key={c.idcustomer} onClick={() => onSelect(c)}
                 className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
@@ -97,29 +89,6 @@ function BrowseCustomerModal({ onSelect, onClose }) {
               </button>
             ))}
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BrowseLokasiModal({ onSelect, onClose }) {
-  const [lokasiList, setLokasiList] = useState([]);
-  useEffect(() => { api.get('/lokasi').then(r => setLokasiList(r.data)); }, []);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Lokasi</h3>
-        </div>
-        <div className="p-4 space-y-0.5 max-h-64 overflow-y-auto scrollbar-thin">
-          {lokasiList.map(l => (
-            <button key={l.idlokasi} onClick={() => onSelect(l)}
-              className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-              <p className="text-sm font-semibold text-dark-500">{l.namalokasi}</p>
-              <p className="text-xs text-dark-300">{l.kodelokasi}</p>
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -187,87 +156,25 @@ function BrowseBarangModal({ onSelect, onClose }) {
   );
 }
 
-function PpnDropdown({ value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-  const isInclude = value === 'INCLUDE';
-  return (
-    <div className="relative" ref={ref}>
-      <button type="button" onClick={() => setOpen(o => !o)}
-        className={`flex items-center justify-between gap-1.5 w-full px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
-          isInclude ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-            : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
-        }`}>
-        <span className="flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${isInclude ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          {isInclude ? 'INCLUDE' : 'TIDAK'}
-        </span>
-        <ChevronDown className="w-3 h-3 opacity-60" />
-      </button>
-      {open && (
-        <div className="absolute z-30 mt-1 left-0 right-0 bg-white rounded-xl border border-primary-100 shadow-lg min-w-[130px]">
-          <button type="button" onClick={() => { onChange('INCLUDE'); setOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors first:rounded-t-xl ${
-              isInclude ? 'bg-emerald-50 text-emerald-700' : 'text-dark-500 hover:bg-emerald-50 hover:text-emerald-700'
-            }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> INCLUDE
-          </button>
-          <button type="button" onClick={() => { onChange('TIDAK_PAKAI'); setOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors last:rounded-b-xl ${
-              !isInclude ? 'bg-red-50 text-red-700' : 'text-dark-500 hover:bg-red-50 hover:text-red-700'
-            }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> TIDAK
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function getSatuanOptions(item) {
-  const opts = [];
-  if (item.satuanbesar) opts.push(item.satuanbesar);
-  if (item.satuansedang) opts.push(item.satuansedang);
-  if (item.satuankecil) opts.push(item.satuankecil);
-  return opts.length ? opts : ['PCS'];
-}
-
-function getDefaultSatuan(b) {
-  return b.satuanbesar || b.satuansedang || b.satuankecil || '';
-}
-
 function isJmlValid(val) {
   const s = String(val).trim();
   return s !== '' && /^\d+$/.test(s) && parseInt(s, 10) > 0;
 }
 
-export default function PenjualanForm({ onSuccess, tabId, editData }) {
-  const user       = useAuthStore(s => s.user);
-  const lokasiAuth = useAuthStore(s => s.lokasi);
-  const closeTab   = useTabStore(s => s.closeTab);
+export default function ReturJualForm({ onSuccess, tabId, editData }) {
+  const user     = useAuthStore(s => s.user);
+  const closeTab = useTabStore(s => s.closeTab);
+  const isEdit   = !!editData;
 
-  const isEdit = !!editData;
-  const defaultPpnMode = (user?.ppn ?? 11) > 0 ? 'INCLUDE' : 'TIDAK_PAKAI';
-
-  const [autoGenerate, setAutoGenerate] = useState(!isEdit);
-  const [kodejual, setKodejual]         = useState(editData?.kodejual || '');
-  const [lokasi, setLokasi]             = useState(
-    isEdit
-      ? (editData.idlokasi ? { idlokasi: editData.idlokasi, namalokasi: editData.namalokasi, kodelokasi: editData.kodelokasi } : null)
-      : (lokasiAuth || null)
-  );
-  const [tgltrans, setTgltrans]         = useState(editData?.tgltrans ? String(editData.tgltrans).slice(0, 10) : today());
-  const [customer, setCustomer]         = useState(
+  const [tgltrans, setTgltrans] = useState(editData?.tgltrans ? String(editData.tgltrans).slice(0, 10) : today());
+  const [customer, setCustomer] = useState(
     isEdit && editData.idcustomer
-      ? { idcustomer: editData.idcustomer, kodecustomer: editData.kodecustomer, namacustomer: editData.namacustomer, alamat: editData.alamat, hp: editData.hp }
+      ? { idcustomer: editData.idcustomer, kodecustomer: editData.kodecustomer, namacustomer: editData.namacustomer }
       : null
   );
-  const [metodbayar, setMetodbayar]     = useState(editData?.metodbayar || 'TUNAI');
+  const [kodejual, setKodejual] = useState(editData?.kodejual || '');
+  const [idjualRef, setIdjualRef] = useState(editData?.idjual || null);
+  const [catatan, setCatatan]   = useState(editData?.catatan || '');
 
   const [items, setItems] = useState(
     editData?.items
@@ -275,47 +182,38 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
           idbarang:     item.idbarang,
           kodebarang:   item.kodebarang,
           namabarang:   item.namabarang,
-          satuanbesar:  item.satuanbesar  || null,
-          satuansedang: item.satuansedang || null,
-          satuankecil:  item.satuankecil  || null,
-          konversi1:    item.konversi1    || 0,
-          konversi2:    item.konversi2    || 0,
-          satuan:       item.satuan || getDefaultSatuan(item),
+          satuan:       item.satuankecil || '',
           jml:          String(item.jml),
           harga:        parseFloat(item.harga) || 0,
-          diskon:       parseFloat(item.diskon) || 0,
-          ppn_mode:     item.ppn > 0 ? 'INCLUDE' : 'TIDAK_PAKAI',
+          tindaklanjut: item.tindaklanjut || 'MASUK_STOK',
+          idbarang2nd:  item.idbarang2nd || null,
+          namabarang2nd: item.namabarang2nd || '',
         }))
       : []
   );
 
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showLokasiModal, setShowLokasiModal]     = useState(false);
   const [showBarangModal, setShowBarangModal]     = useState(false);
+  const [showBarang2ndModal, setShowBarang2ndModal] = useState(false);
+  const [barang2ndForIdx, setBarang2ndForIdx]     = useState(null);
   const [loading, setLoading] = useState(false);
-  const ppnPercent = user?.ppn || 11;
 
   const addBarang = (b) => {
     if (items.find(i => i.idbarang === b.idbarang)) {
-      toast('Barang sudah ada di tabel. Ubah jumlah pada baris terkait.', { icon: '\u2139\uFE0F' });
+      toast('Barang sudah ada di tabel.', { icon: '\u2139\uFE0F' });
       setShowBarangModal(false);
       return;
     }
-    const hargaJual = parseFloat(b.hargajual_terbaru || 0);
     setItems(prev => [...prev, {
       idbarang:     b.idbarang,
       kodebarang:   b.kodebarang,
       namabarang:   b.namabarang,
-      satuanbesar:  b.satuanbesar  || null,
-      satuansedang: b.satuansedang || null,
-      satuankecil:  b.satuankecil  || null,
-      konversi1:    b.konversi1    || 0,
-      konversi2:    b.konversi2    || 0,
-      satuan:       getDefaultSatuan(b),
+      satuan:       b.satuankecil || '',
       jml:          '1',
-      harga:        hargaJual,
-      diskon:       0,
-      ppn_mode:     defaultPpnMode,
+      harga:        parseFloat(b.hargajual_terbaru || 0),
+      tindaklanjut: 'MASUK_STOK',
+      idbarang2nd:  null,
+      namabarang2nd: '',
     }]);
     setShowBarangModal(false);
   };
@@ -329,16 +227,12 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
   };
 
   const computedItems = items.map(item => {
-    const jml    = parseFloat(item.jml) || 0;
-    const base   = item.harga * jml;
-    const diskonAmt = item.diskon ? (base * item.diskon) / 100 : 0;
-    const ppnAmt = item.ppn_mode === 'INCLUDE' ? ((base - diskonAmt) * ppnPercent) / 100 : 0;
-    return { ...item, jml, diskonAmt, ppnAmt, subtotal: base - diskonAmt + ppnAmt };
+    const jml      = parseFloat(item.jml) || 0;
+    const subtotal = item.harga * jml;
+    return { ...item, jml, subtotal };
   });
 
-  const totalPpn    = computedItems.reduce((s, i) => s + i.ppnAmt, 0);
-  const totalDiskon = computedItems.reduce((s, i) => s + i.diskonAmt, 0);
-  const grandTotal  = computedItems.reduce((s, i) => s + i.subtotal, 0);
+  const total = computedItems.reduce((s, i) => s + i.subtotal, 0);
 
   const handleSubmit = async (shouldPrint = false) => {
     if (items.length === 0) return toast.error('Tambahkan barang terlebih dahulu');
@@ -348,40 +242,43 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
       return toast.error(`Jumlah pada baris ${invalidIdx + 1} harus angka bulat positif`);
     }
 
-    if (!autoGenerate && !kodejual.trim()) return toast.error('Kode jual wajib diisi');
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].tindaklanjut === 'MASUK_STOK_2ND' && !items[i].idbarang2nd) {
+        return toast.error(`Barang pengganti wajib dipilih pada baris ${i + 1} (MASUK_STOK_2ND)`);
+      }
+    }
+
     setLoading(true);
     try {
       const payload = {
-        kodejual:    autoGenerate ? null : kodejual.trim(),
         tgltrans,
         idcustomer:  customer?.idcustomer || null,
-        idlokasi:    lokasi?.idlokasi     || null,
-        jenis:       'JUAL',
-        metodbayar,
-        useppn:      true,
-        bayar:       grandTotal,
+        idjual:      idjualRef || null,
+        kodejual:    kodejual || null,
+        catatan:     catatan || null,
         items: computedItems.map(i => ({
-          idbarang: i.idbarang,
-          jml:      i.jml,
-          harga:    i.harga,
-          diskon:   i.diskon || 0,
+          idbarang:     i.idbarang,
+          jml:          i.jml,
+          harga:        i.harga,
+          tindaklanjut: i.tindaklanjut,
+          idbarang2nd:  i.tindaklanjut === 'MASUK_STOK_2ND' ? (i.idbarang2nd || null) : null,
         })),
       };
 
       let res;
       if (isEdit) {
-        res = await api.put(`/jual/${editData.idjual}`, payload);
+        res = await api.put(`/returjual/${editData.idreturjual}`, payload);
       } else {
-        res = await api.post('/jual', payload);
+        res = await api.post('/returjual', payload);
       }
 
-      toast.success(isEdit ? 'Penjualan berhasil diupdate!' : 'Penjualan berhasil disimpan!');
+      toast.success(isEdit ? 'Retur berhasil diupdate!' : 'Retur berhasil disimpan!');
 
       if (shouldPrint) {
         try {
-          const idjual = isEdit ? editData.idjual : res.data.idjual;
-          const { data: fullData } = await api.get(`/jual/${idjual}`);
-          printFaktur(fullData, user);
+          const id = isEdit ? editData.idreturjual : res.data.idreturjual;
+          const { data: fullData } = await api.get(`/returjual/${id}`);
+          printNotaRetur(fullData, user);
         } catch {
           toast.error('Gagal memuat data untuk cetak');
         }
@@ -396,17 +293,21 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
     }
   };
 
+  const tindakLanjutOptions = [
+    { value: 'MASUK_STOK',     label: 'MASUK STOK' },
+    { value: 'MASUK_STOK_2ND', label: 'MASUK STOK 2ND' },
+    { value: 'HANGUS',         label: 'HANGUS' },
+  ];
+
   return (
     <div className="flex flex-col h-full">
-
-      {/* Page header */}
       <div className="flex items-center gap-3 px-6 pt-4 pb-3 border-b border-primary-50 shrink-0">
         <button onClick={() => closeTab(tabId)} className="p-1.5 rounded-lg hover:bg-warm-50 text-dark-400">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-dark-500">{isEdit ? `Edit ${editData?.kodejual || 'Penjualan'}` : 'Penjualan Baru'}</h2>
-          <p className="text-xs text-dark-300">{isEdit ? 'Edit transaksi penjualan' : 'Form input transaksi penjualan'}</p>
+          <h2 className="text-lg font-bold text-dark-500">{isEdit ? `Edit ${editData?.kodereturjual || 'Retur'}` : 'Retur Penjualan Baru'}</h2>
+          <p className="text-xs text-dark-300">{isEdit ? 'Edit transaksi retur' : 'Form input retur penjualan'}</p>
         </div>
       </div>
 
@@ -419,69 +320,18 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
               <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">Header</h3>
             </div>
             <div className="p-5 grid grid-cols-2 gap-4">
-
-              {/* Kode Jual */}
               <div>
-                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Kode Jual</label>
-                {isEdit ? (
-                  <div className="px-3 py-2 rounded-xl border border-primary-100 bg-warm-50/40 text-sm text-dark-400 font-mono">
-                    {kodejual}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <input
-                      disabled={autoGenerate}
-                      value={autoGenerate ? '(Auto-generate)' : kodejual}
-                      onChange={e => setKodejual(e.target.value.toUpperCase())}
-                      placeholder="Masukkan kode jual..."
-                      className="flex-1 px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-warm-50 disabled:text-dark-300 disabled:cursor-not-allowed"
-                    />
-                    <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                      <input type="checkbox" checked={autoGenerate}
-                        onChange={e => { setAutoGenerate(e.target.checked); if (e.target.checked) setKodejual(''); }}
-                        className="w-3.5 h-3.5 rounded accent-primary-500" />
-                      <span className="text-xs text-dark-400 font-medium">Generate</span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Tanggal Transaksi */}
-              <div>
-                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal Transaksi</label>
+                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal</label>
                 <input type="date" value={tgltrans} onChange={e => setTgltrans(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
               </div>
-
-              {/* Lokasi */}
               <div>
-                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Lokasi</label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary-100 bg-warm-50/40 text-sm min-h-[38px]">
-                    <MapPin className="w-3.5 h-3.5 text-dark-300 shrink-0" />
-                    {lokasi
-                      ? <span className="text-dark-500">{lokasi.namalokasi}</span>
-                      : <span className="text-dark-300">Pilih Lokasi...</span>
-                    }
-                  </div>
-                  <button onClick={() => setShowLokasiModal(true)}
-                    className="px-3 py-2 rounded-xl border border-primary-100 text-xs font-semibold text-dark-400 hover:bg-warm-50 transition-colors shrink-0">
-                    Browse
-                  </button>
-                </div>
+                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Kode Jual (Referensi)</label>
+                <input type="text" value={kodejual} onChange={e => setKodejual(e.target.value.toUpperCase())}
+                  placeholder="Masukkan kode jual..."
+                  className="w-full px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
               </div>
 
-              {/* Metode Bayar */}
-              <div>
-                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Metode Bayar</label>
-                <select value={metodbayar} onChange={e => setMetodbayar(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20">
-                  <option value="TUNAI">TUNAI</option>
-                  <option value="NON TUNAI">NON TUNAI</option>
-                </select>
-              </div>
-
-              {/* Customer — spans full width */}
               <div className="col-span-2">
                 <label className="block text-xs font-semibold text-dark-400 mb-1.5">Customer</label>
                 <div className="flex items-start gap-3">
@@ -490,12 +340,11 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
                     <Users className="w-3.5 h-3.5" /> Browse Customer
                   </button>
                   {customer ? (
-                    <div className="flex-1 grid grid-cols-4 gap-3 p-3 rounded-xl border border-primary-100 bg-warm-50/30">
+                    <div className="flex-1 grid grid-cols-3 gap-3 p-3 rounded-xl border border-primary-100 bg-warm-50/30">
                       {[
                         { label: 'Kode Customer', value: customer.kodecustomer },
                         { label: 'Nama Customer', value: customer.namacustomer },
-                        { label: 'Alamat',         value: customer.alamat || '-' },
-                        { label: 'No. HP',          value: customer.hp    || '-' },
+                        { label: 'No. HP', value: customer.hp || '-' },
                       ].map(f => (
                         <div key={f.label}>
                           <p className="text-[10px] text-dark-300 mb-0.5">{f.label}</p>
@@ -511,16 +360,23 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
                 </div>
               </div>
 
+              <div className="col-span-2">
+                <label className="block text-xs font-semibold text-dark-400 mb-1.5">Catatan</label>
+                <textarea value={catatan} onChange={e => setCatatan(e.target.value)}
+                  placeholder="Catatan retur (opsional)..."
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none" />
+              </div>
             </div>
           </div>
 
-          {/* SECTION 2: DETAIL BARANG */}
+          {/* SECTION 2: DETAIL RETUR */}
           <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
             <div className="px-5 py-3 border-b border-primary-50 bg-warm-50/50 flex items-center justify-between">
               <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">
-                Detail Barang
+                Barang Dikembalikan
                 {computedItems.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded-md bg-primary-100 text-primary-600 text-[10px] font-bold">
+                  <span className="ml-2 px-1.5 py-0.5 rounded-md bg-red-100 text-red-600 text-[10px] font-bold">
                     {computedItems.length}
                   </span>
                 )}
@@ -531,32 +387,29 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
               </button>
             </div>
             <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full min-w-[1080px] text-sm">
+              <table className="w-full min-w-[960px] text-sm">
                 <thead>
                   <tr className="border-b border-primary-50 bg-warm-50/30">
                     <th className="text-center px-3 py-2.5 text-xs font-semibold text-dark-300 w-10">No</th>
                     <th className="text-left   px-3 py-2.5 text-xs font-semibold text-dark-300 w-28">Kode</th>
                     <th className="text-left   px-3 py-2.5 text-xs font-semibold text-dark-300">Nama Barang</th>
-                    <th className="text-left   px-3 py-2.5 text-xs font-semibold text-dark-300 w-28">Satuan</th>
                     <th className="text-center px-3 py-2.5 text-xs font-semibold text-dark-300 w-20">Jumlah</th>
-                    <th className="text-right  px-3 py-2.5 text-xs font-semibold text-dark-300 w-36">Harga Jual</th>
-                    <th className="text-right  px-3 py-2.5 text-xs font-semibold text-dark-300 w-24">Diskon %</th>
+                    <th className="text-right  px-3 py-2.5 text-xs font-semibold text-dark-300 w-36">Harga</th>
                     <th className="text-right  px-3 py-2.5 text-xs font-semibold text-dark-300 w-32">Subtotal</th>
-                    <th className="text-center px-3 py-2.5 text-xs font-semibold text-dark-300 w-36">PPN</th>
+                    <th className="text-center px-3 py-2.5 text-xs font-semibold text-dark-300 w-44">Tindak Lanjut</th>
                     <th className="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {computedItems.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-12 text-center text-sm text-dark-300">
+                      <td colSpan={8} className="px-4 py-12 text-center text-sm text-dark-300">
                         Belum ada barang. Klik{' '}
                         <span className="font-semibold text-primary-500">Tambah Barang</span>{' '}
                         untuk menambahkan.
                       </td>
                     </tr>
                   ) : computedItems.map((item, idx) => {
-                    const satuanOpts = getSatuanOptions(item);
                     const rawItem = items[idx];
                     return (
                       <tr key={item.idbarang} className="border-b border-primary-50/50 hover:bg-warm-50/20 transition-colors">
@@ -564,15 +417,8 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
                         <td className="px-3 py-2.5 text-xs font-mono text-dark-300">{item.kodebarang}</td>
                         <td className="px-3 py-2.5 font-medium text-dark-500">{item.namabarang}</td>
                         <td className="px-3 py-2.5">
-                          <select value={item.satuan} onChange={e => updateItem(idx, 'satuan', e.target.value)}
-                            className="w-full px-2 py-1.5 rounded-lg border border-primary-100 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary-500/20">
-                            {satuanOpts.map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-3 py-2.5">
                           <input type="text" value={rawItem.jml}
                             onChange={e => updateItem(idx, 'jml', e.target.value)}
-                            placeholder="0"
                             className={`w-full px-2 py-1.5 rounded-lg border text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary-500/20 ${
                               !isJmlValid(rawItem.jml) ? 'border-red-300 bg-red-50 text-red-700' : 'border-primary-100'
                             }`} />
@@ -582,16 +428,35 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
                             onChange={e => updateItem(idx, 'harga', parseFloat(e.target.value) || 0)}
                             className="w-full px-2 py-1.5 rounded-lg border border-primary-100 text-xs text-right focus:outline-none focus:ring-1 focus:ring-primary-500/20" />
                         </td>
-                        <td className="px-3 py-2.5">
-                          <input type="number" min="0" max="100" value={item.diskon}
-                            onChange={e => updateItem(idx, 'diskon', parseFloat(e.target.value) || 0)}
-                            className="w-full px-2 py-1.5 rounded-lg border border-primary-100 text-xs text-right focus:outline-none focus:ring-1 focus:ring-primary-500/20" />
-                        </td>
                         <td className="px-3 py-2.5 text-right text-xs font-mono font-semibold text-dark-500">
                           {formatRupiah(item.subtotal)}
                         </td>
                         <td className="px-3 py-2.5">
-                          <PpnDropdown value={item.ppn_mode} onChange={v => updateItem(idx, 'ppn_mode', v)} />
+                          <div className="flex flex-col gap-1">
+                            <select value={item.tindaklanjut}
+                              onChange={e => {
+                                updateItem(idx, 'tindaklanjut', e.target.value);
+                                if (e.target.value !== 'MASUK_STOK_2ND') {
+                                  updateItem(idx, 'idbarang2nd', null);
+                                  updateItem(idx, 'namabarang2nd', '');
+                                }
+                              }}
+                              className="w-full px-2 py-1.5 rounded-lg border border-primary-100 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary-500/20">
+                              {tindakLanjutOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                            {item.tindaklanjut === 'MASUK_STOK_2ND' && (
+                              <div className="flex gap-1">
+                                <div className="flex-1 text-[10px] px-2 py-1 rounded border border-primary-100 bg-warm-50/30 truncate">
+                                  {item.namabarang2nd || 'Pilih barang pengganti'}
+                                </div>
+                                <button
+                                  onClick={() => { setBarang2ndForIdx(idx); setShowBarang2ndModal(true); }}
+                                  className="px-2 py-1 rounded border border-primary-100 text-[10px] font-semibold text-dark-400 hover:bg-warm-50 shrink-0">
+                                  Browse
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2.5">
                           <button onClick={() => removeItem(idx)}
@@ -610,23 +475,11 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
           {/* SECTION 3: FOOTER */}
           <div className="bg-white rounded-2xl border border-primary-50 p-5">
             <div className="flex items-center justify-between">
-              <div className="space-y-1.5">
+              <div>
                 <div className="flex items-center gap-6">
-                  <span className="text-xs text-dark-300 w-28 text-right">Total Diskon:</span>
-                  <span className="text-sm font-semibold text-red-500 font-mono w-40 text-right">
-                    -{formatRupiah(totalDiskon)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-6">
-                  <span className="text-xs text-dark-300 w-28 text-right">Total PPN:</span>
-                  <span className="text-sm font-semibold text-dark-400 font-mono w-40 text-right">
-                    {formatRupiah(totalPpn)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-6">
-                  <span className="text-xs font-bold text-dark-500 w-28 text-right">Grand Total:</span>
+                  <span className="text-xs font-bold text-dark-500 w-20 text-right">Total:</span>
                   <span className="text-xl font-bold text-accent-600 font-mono w-40 text-right">
-                    {formatRupiah(grandTotal)}
+                    {formatRupiah(total)}
                   </span>
                 </div>
               </div>
@@ -647,23 +500,27 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
         </div>
       </div>
 
-      {/* Modals */}
       {showCustomerModal && (
         <BrowseCustomerModal
           onSelect={c => { setCustomer(c); setShowCustomerModal(false); }}
           onClose={() => setShowCustomerModal(false)}
         />
       )}
-      {showLokasiModal && (
-        <BrowseLokasiModal
-          onSelect={l => { setLokasi(l); setShowLokasiModal(false); }}
-          onClose={() => setShowLokasiModal(false)}
-        />
-      )}
       {showBarangModal && (
         <BrowseBarangModal
           onSelect={addBarang}
           onClose={() => setShowBarangModal(false)}
+        />
+      )}
+      {showBarang2ndModal && barang2ndForIdx !== null && (
+        <BrowseBarangModal
+          onSelect={b => {
+            updateItem(barang2ndForIdx, 'idbarang2nd', b.idbarang);
+            updateItem(barang2ndForIdx, 'namabarang2nd', b.namabarang);
+            setShowBarang2ndModal(false);
+            setBarang2ndForIdx(null);
+          }}
+          onClose={() => { setShowBarang2ndModal(false); setBarang2ndForIdx(null); }}
         />
       )}
     </div>

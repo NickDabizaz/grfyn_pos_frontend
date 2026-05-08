@@ -11,6 +11,8 @@ import Customer from './pages/Customer';
 import Supplier from './pages/Supplier';
 import Pembelian from './pages/Pembelian';
 import Penjualan from './pages/Penjualan';
+import ReturJual from './pages/ReturJual';
+import TukarBarang from './pages/TukarBarang';
 import Setting from './pages/Setting';
 import Kas from './pages/Kas';
 import Akun from './pages/Akun';
@@ -26,6 +28,7 @@ import LaporanPembelian from './pages/laporan/LaporanPembelian';
 import LaporanMasterBarang from './pages/laporan/LaporanMasterBarang';
 import LaporanStokSekarang from './pages/laporan/LaporanStokSekarang';
 import LaporanStokKartuStok from './pages/laporan/LaporanStokKartuStok';
+import Laporan from './pages/Laporan';
 
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
@@ -52,6 +55,8 @@ export default function App() {
             <Route path="/master/lokasi" element={<Lokasi />} />
             <Route path="/pembelian" element={<Pembelian />} />
             <Route path="/penjualan" element={<Penjualan />} />
+            <Route path="/penjualan/retur" element={<ReturJual />} />
+            <Route path="/penjualan/tukarbarang" element={<TukarBarang />} />
             <Route path="/setting" element={<Setting />} />
             <Route path="/kas" element={<Kas />} />
             <Route path="/stok" element={<Navigate to="/stok/saldoawal" replace />} />
@@ -59,9 +64,11 @@ export default function App() {
             <Route path="/stok/penyesuaian" element={<PenyesuaianStok />} />
             <Route path="/stok/hitunghpp" element={<HitungHPP />} />
             <Route path="/laporan" element={<Navigate to="/laporan/penjualan" replace />} />
-            <Route path="/laporan/penjualan" element={<LaporanPenjualan />} />
-            <Route path="/laporan/pembelian" element={<LaporanPembelian />} />
-            <Route path="/laporan/master/barang" element={<LaporanMasterBarang />} />
+            <Route path="/laporan/penjualan" element={<Laporan />} />
+            <Route path="/laporan/pembelian" element={<Laporan />} />
+            <Route path="/laporan/master/barang" element={<Laporan />} />
+            <Route path="/laporan/master/customer" element={<Laporan />} />
+            <Route path="/laporan/master/supplier" element={<Laporan />} />
             <Route path="/laporan/stok/sekarang" element={<LaporanStokSekarang />} />
             <Route path="/laporan/stok/kartustok" element={<LaporanStokKartuStok />} />
           </Route>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse, ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin, ClipboardList, Calculator } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse, ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin, ClipboardList, Calculator, Undo2, Repeat } from 'lucide-react';
 
 import Dashboard from '../pages/Dashboard';
 import Pos from '../pages/Pos';
@@ -10,6 +10,8 @@ import User from '../pages/User';
 import Lokasi from '../pages/Lokasi';
 import Pembelian from '../pages/Pembelian';
 import Penjualan from '../pages/Penjualan';
+import ReturJual from '../pages/ReturJual';
+import TukarBarang from '../pages/TukarBarang';
 import Kas from '../pages/Kas';
 import Setting from '../pages/Setting';
 import SaldoAwalStok from '../pages/stok/SaldoAwalStok';
@@ -20,6 +22,7 @@ import LaporanPembelian from '../pages/laporan/LaporanPembelian';
 import LaporanMasterBarang from '../pages/laporan/LaporanMasterBarang';
 import LaporanStokSekarang from '../pages/laporan/LaporanStokSekarang';
 import LaporanStokKartuStok from '../pages/laporan/LaporanStokKartuStok';
+import Laporan from '../pages/Laporan';
 
 const registry = {
   'dashboard': {
@@ -70,6 +73,21 @@ const registry = {
     label    : 'Penjualan',
     icon     : ReceiptText,
   },
+  'penjualan.transaksi': {
+    component: Penjualan,
+    label    : 'Transaksi Jual',
+    icon     : ReceiptText,
+  },
+  'penjualan.retur': {
+    component: ReturJual,
+    label    : 'Retur Penjualan',
+    icon     : Undo2,
+  },
+  'penjualan.tukarbarang': {
+    component: TukarBarang,
+    label    : 'Tukar Barang',
+    icon     : Repeat,
+  },
   'stok.saldoawal': {
     component: SaldoAwalStok,
     label    : 'Saldo Awal Stok',
@@ -99,15 +117,15 @@ const registry = {
     icon     : Coins,
   },
   'laporan.penjualan': {
-    component: LaporanPenjualan,
+    component: Laporan,
     label    : 'Laporan Penjualan',
   },
   'laporan.pembelian': {
-    component: LaporanPembelian,
+    component: Laporan,
     label    : 'Laporan Pembelian',
   },
   'laporan.barang': {
-    component: LaporanMasterBarang,
+    component: Laporan,
     label    : 'Laporan Barang',
   },
   'laporan.stoksekarang': {
