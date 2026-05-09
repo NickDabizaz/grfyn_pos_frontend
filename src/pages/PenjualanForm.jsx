@@ -629,7 +629,7 @@ export default function PenjualanForm({ onSuccess, tabId, editData }) {
                 <div className="flex items-center gap-6">
                   <span className="text-xs text-dark-300 w-28 text-right">Total Diskon:</span>
                   <span className="text-sm font-semibold text-red-500 font-mono w-40 text-right">
-                    -{formatRupiah(totalDiskon)}
+                    {totalDiskon === 0 ? '0' : `-${formatRupiah(totalDiskon)}`}
                   </span>
                 </div>
                 <div className="flex items-center gap-6">
