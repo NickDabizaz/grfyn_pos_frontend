@@ -5,6 +5,8 @@ import { formatRupiah, today } from '../lib/utils';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Search, Trash2, MapPin, Users, Plus, Printer, ChevronDown } from 'lucide-react';
 import useTabStore from '../store/tabStore';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/l10n/id.js';
 
 function printFaktur(data, user) {
   const items = data.items || [];
@@ -314,6 +316,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
   const [showBarangModal, setShowBarangModal]     = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [langsungLunas, setLangsungLunas] = useState(editData.statuslunas == 'LUNAS');
   const ppnPercent = user?.ppn || 11;
 
   const addBarang = (b) => {
@@ -362,7 +365,12 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
   const handleSubmit = async (shouldPrint = false) => {
     if (items.length === 0) return toast.error('Tambahkan barang terlebih dahulu');
 
-    const invalidIdx = items.findIndex(i => !isJmlValid(i.jml));
+    const parsedItems = items.map(i => {
+      const n = Number(i.jml);
+      return { ...i, jml: isNaN(n) ? i.jml : n };
+    });
+
+    const invalidIdx = parsedItems.findIndex(i => !isJmlValid(i.jml));
     if (invalidIdx !== -1) {
       return toast.error(`Jumlah pada baris ${invalidIdx + 1} harus angka bulat positif`);
     }
@@ -377,6 +385,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
         idlokasi:   lokasi?.idlokasi     || null,
         grandtotal: grandTotal,
         bayar:      grandTotal,
+        langsung_lunas: langsungLunas,
         items: computedItems.map(i => ({
           idbarang: i.idbarang,
           jml:      i.jml,
@@ -408,6 +417,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
       if (onSuccess) onSuccess();
       closeTab(tabId);
     } catch (err) {
+      console.log(err)
       toast.error(err.response?.data?.message || 'Gagal menyimpan');
     } finally {
       setLoading(false);
@@ -467,8 +477,9 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
               {/* Tanggal Transaksi */}
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal Transaksi</label>
-                <input type="date" value={tgltrans} onChange={e => setTgltrans(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                <Flatpickr value={tgltrans} onChange={([d]) => setTgltrans(d.toISOString().slice(0, 10))}
+                  options={{ dateFormat: 'Y-m-d', locale: 'id' }}
+                  className="flatpickr-input w-full" placeholder="Pilih tanggal" />
               </div>
 
               {/* Lokasi */}
@@ -581,11 +592,11 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
                           </select>
                         </td>
                         <td className="px-3 py-2.5">
-                          <input type="text" value={rawItem.jml}
+                          <input type="text" value={Number(rawItem.jml)}
                             onChange={e => updateItem(idx, 'jml', e.target.value)}
                             placeholder="0"
                             className={`w-full px-2 py-1.5 rounded-lg border text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary-500/20 ${
-                              !isJmlValid(rawItem.jml) ? 'border-red-300 bg-red-50 text-red-700' : 'border-primary-100'
+                              !isJmlValid(Number(rawItem.jml)) ? 'border-red-300 bg-red-50 text-red-700' : 'border-primary-100'
                             }`} />
                         </td>
                         <td className="px-3 py-2.5 text-right text-xs font-mono text-dark-300">
@@ -635,14 +646,19 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={() => handleSubmit(false)} disabled={loading || items.length === 0}
-                  className="px-6 py-3 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-accent-500/20 active:scale-[0.98]">
+                  className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   {loading ? 'Menyimpan...' : 'Simpan'}
                 </button>
                 <button onClick={() => handleSubmit(true)} disabled={loading || items.length === 0}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-primary-500/20 active:scale-[0.98]">
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <Printer className="w-4 h-4" />
                   {loading ? 'Menyimpan...' : 'Simpan dan Cetak'}
                 </button>
+                  <label className="flex items-center gap-2 cursor-pointer ml-2">
+                    <input type="checkbox" checked={langsungLunas} onChange={e => setLangsungLunas(e.target.checked)}
+                      className="w-4 h-4 rounded accent-primary-500 cursor-pointer" />
+                    <span className="text-xs text-dark-400 font-medium">Langsung Lunas</span>
+                  </label>
               </div>
             </div>
           </div>

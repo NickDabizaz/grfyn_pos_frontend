@@ -8,6 +8,8 @@ import { usePagination } from '../hooks/usePagination';
 import Pagination from '../components/ui/Pagination';
 import useTabStore from '../store/tabStore';
 import PenjualanForm from './PenjualanForm';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/l10n/id.js';
 
 function printFaktur(data, user) {
   const items = data.items || [];
@@ -172,6 +174,15 @@ export default function Penjualan({ isActive }) {
   const handleEdit = async (j) => {
     if (j.status === 'VOID') return toast.error('Penjualan VOID tidak dapat diedit');
     try {
+      const { data: check } = await api.get(`/jual/${j.idjual}/check-edit`);
+      if (!check.canEdit) {
+        if (check.reason === 'PIUTANG_LUNAS') {
+          return toast.error(check.message || 'Hapus pelunasan terlebih dahulu');
+        }
+        if (check.reason === 'HAS_RETUR') {
+          return toast.error(check.message || 'Batalkan retur terlebih dahulu');
+        }
+      }
       const { data } = await api.get(`/jual/${j.idjual}`);
       openTab({
         label: `Edit ${j.kodejual}`,
@@ -189,6 +200,17 @@ export default function Penjualan({ isActive }) {
 
   const handleCancel = async (e, id) => {
     e.stopPropagation();
+    try {
+      const { data: check } = await api.get(`/jual/${id}/check-edit`);
+      if (!check.canEdit) {
+        if (check.reason === 'PIUTANG_LUNAS') {
+          return toast.error(check.message || 'Hapus pelunasan terlebih dahulu');
+        }
+        if (check.reason === 'HAS_RETUR') {
+          return toast.error(`Terdapat retur: ${check.returs?.join(', ')}. Batalkan retur terlebih dahulu.`);
+        }
+      }
+    } catch {}
     if (!confirm('Batalkan penjualan ini? Stok akan dikembalikan.')) return;
     try {
       await api.put(`/jual/${id}/cancel`);
@@ -300,11 +322,13 @@ export default function Penjualan({ isActive }) {
           <div>
             <label className="block text-[10px] font-semibold text-dark-300 mb-1">Tanggal</label>
             <div className="flex items-center gap-1.5">
-              <input type="date" value={tglAwal} onChange={e => setTglAwal(e.target.value)}
-                className="flex-1 px-2 py-2 rounded-lg border border-primary-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500/20" />
+              <Flatpickr value={tglAwal} onChange={([d]) => setTglAwal(d.toISOString().slice(0, 10))}
+                options={{ dateFormat: 'Y-m-d', locale: 'id' }}
+                className="flatpickr-input flex-1 text-xs" placeholder="Dari tanggal" />
               <span className="text-[10px] text-dark-300 shrink-0">s/d</span>
-              <input type="date" value={tglAkhir} onChange={e => setTglAkhir(e.target.value)}
-                className="flex-1 px-2 py-2 rounded-lg border border-primary-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500/20" />
+              <Flatpickr value={tglAkhir} onChange={([d]) => setTglAkhir(d.toISOString().slice(0, 10))}
+                options={{ dateFormat: 'Y-m-d', locale: 'id' }}
+                className="flatpickr-input flex-1 text-xs" placeholder="Sampai tanggal" />
             </div>
           </div>
 
@@ -314,14 +338,6 @@ export default function Penjualan({ isActive }) {
       {/* Grid */}
       <div className="flex-1 overflow-auto px-6 pb-4">
         <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
-          {selectedRow && (
-            <div className="px-4 py-2 bg-primary-50/60 border-b border-primary-100 flex items-center gap-2 text-xs text-primary-600">
-              <span className="font-semibold">Dipilih:</span>
-              <span className="font-mono font-bold">{selectedRow.kodejual}</span>
-              <span className="text-dark-300">&mdash; {selectedRow.namacustomer || 'Tanpa Customer'}</span>
-              <span className="ml-auto text-[10px] text-dark-300">Klik 2&times; baris untuk edit</span>
-            </div>
-          )}
           <div className="overflow-y-auto scrollbar-thin">
             <table className="w-full">
               <thead className="sticky top-0 z-10">
@@ -362,9 +378,7 @@ export default function Penjualan({ isActive }) {
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600">{j.jenis || 'JUAL'}</span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
-                          j.status === 'VOID' ? 'bg-red-50 text-red-600' : j.status === 'LUNAS' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
-                        }`}>
+                        <span className={`badge badge-sm ${j.status === 'VOID' ? 'badge-error' : j.status === 'LUNAS' ? 'badge-info' : 'badge-success'}`}>
                           {j.status}
                         </span>
                       </td>

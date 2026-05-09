@@ -5,6 +5,8 @@ import { formatRupiah, today } from '../lib/utils';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Search, Trash2, Users, Plus, Printer } from 'lucide-react';
 import useTabStore from '../store/tabStore';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/l10n/id.js';
 
 function printNotaRetur(data, user) {
   const items = data.items || [];
@@ -322,8 +324,9 @@ export default function ReturJualForm({ onSuccess, tabId, editData }) {
             <div className="p-5 grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal</label>
-                <input type="date" value={tgltrans} onChange={e => setTgltrans(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                <Flatpickr value={tgltrans} onChange={([d]) => setTgltrans(d.toISOString().slice(0, 10))}
+                  options={{ dateFormat: 'Y-m-d', locale: 'id' }}
+                  className="flatpickr-input w-full" placeholder="Pilih tanggal" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1.5">Kode Jual (Referensi)</label>

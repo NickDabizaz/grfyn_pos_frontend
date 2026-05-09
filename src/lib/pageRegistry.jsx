@@ -1,4 +1,4 @@
-import { LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse, ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin, ClipboardList, Calculator, Undo2, Repeat } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse, ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin, ClipboardList, Calculator, Undo2, Repeat, Wallet } from 'lucide-react';
 
 import Dashboard from '../pages/Dashboard';
 import Pos from '../pages/Pos';
@@ -23,6 +23,9 @@ import LaporanMasterBarang from '../pages/laporan/LaporanMasterBarang';
 import LaporanStokSekarang from '../pages/laporan/LaporanStokSekarang';
 import LaporanStokKartuStok from '../pages/laporan/LaporanStokKartuStok';
 import Laporan from '../pages/Laporan';
+import PelunasanPiutang from '../pages/keuangan/PelunasanPiutang';
+import PelunasanHutang from '../pages/keuangan/PelunasanHutang';
+import LaporanBarang from '../pages/laporan/LaporanBarang';
 
 const registry = {
   'dashboard': {
@@ -116,16 +119,31 @@ const registry = {
     label    : 'Kas',
     icon     : Coins,
   },
+  'keuangan.kas': {
+    component: Kas,
+    label    : 'Kas',
+    icon     : Coins,
+  },
+  'keuangan.pelunasanpiutang': {
+    component: PelunasanPiutang,
+    label    : 'Pelunasan Piutang',
+    icon     : Wallet,
+  },
+  'keuangan.pelunasanhutang': {
+    component: PelunasanHutang,
+    label    : 'Pelunasan Hutang',
+    icon     : Wallet,
+  },
   'laporan.penjualan': {
-    component: Laporan,
+    component: LaporanPenjualan,
     label    : 'Laporan Penjualan',
   },
   'laporan.pembelian': {
-    component: Laporan,
+    component: LaporanPembelian,
     label    : 'Laporan Pembelian',
   },
   'laporan.barang': {
-    component: Laporan,
+    component: LaporanBarang,
     label    : 'Laporan Barang',
   },
   'laporan.stoksekarang': {

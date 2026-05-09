@@ -259,14 +259,7 @@ export default function TukarBarang({ isActive }) {
 
       <div className="flex-1 overflow-auto px-6 pb-4">
         <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
-          {selectedRow && (
-            <div className="px-4 py-2 bg-primary-50/60 border-b border-primary-100 flex items-center gap-2 text-xs text-primary-600">
-              <span className="font-semibold">Dipilih:</span>
-              <span className="font-mono font-bold">{selectedRow.kodetukarbarang}</span>
-              <span className="text-dark-300">&mdash; {selectedRow.namacustomer || 'Tanpa Customer'}</span>
-              <span className="ml-auto text-[10px] text-dark-300">Klik 2&times; baris untuk edit</span>
-            </div>
-          )}
+          
           <div className="overflow-y-auto scrollbar-thin">
             <table className="w-full">
               <thead className="sticky top-0 z-10">

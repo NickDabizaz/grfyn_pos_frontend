@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .flatpickr-input {
+    background-color: #FFFDF9;
+    border: 1px solid #D7CAC1;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    width: 100%;
+    color: #4B3E34;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  .flatpickr-input:focus {
+    outline: none;
+    border-color: #C4683D;
+    box-shadow: 0 0 0 3px rgba(196, 104, 61, 0.15);
+  }
+  .flatpickr-input::placeholder {
+    color: #998A76;
+  }
+
+  .choices__inner {
+    background-color: #FFFDF9 !important;
+    border: 1px solid #D7CAC1 !important;
+    border-radius: 0.5rem !important;
+    min-height: 2.5rem !important;
+    padding: 0.25rem 0.75rem !important;
+  }
+  .choices[data-type*=select-one] .choices__inner {
+    padding-bottom: 0.25rem !important;
+  }
+  .choices__input {
+    background-color: transparent !important;
+    color: #4B3E34 !important;
+    font-size: 0.875rem !important;
+  }
+  .choices__list--dropdown .choices__item--selectable,
+  .choices__list[aria-expanded] .choices__item--selectable {
+    font-size: 0.875rem;
+    color: #4B3E34;
+  }
+  .choices__item--selectable.is-highlighted,
+  .choices__item--selectable:hover {
+    background-color: #FAF0E8 !important;
+  }
+  .choices__item.is-selected {
+    background-color: #C4683D !important;
+    color: #FFF !important;
+  }
+  .choices__placeholder {
+    color: #998A76 !important;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;

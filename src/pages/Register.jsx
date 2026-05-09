@@ -129,14 +129,14 @@ export default function Register() {
             <div className="space-y-4 mt-4 ms-4">
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1">Kode Lokasi *</label>
-                <input value={form.lokasi.kodelokasi} onChange={e => update('lokasi', 'kodelokasi', e.target.value)}
+                <input value={form.lokasi.kodelokasi} onChange={e => update('lokasi', 'kodelokasi', e.target.value.toUpperCase())}
                   className="w-full px-4 py-3 rounded-xl border border-primary-100 bg-warm-50 text-dark-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
                   placeholder="01" />
                 <p className="text-[10px] text-dark-200 mt-1">Kode unik per perusahaan (contoh: 01, 02)</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1">Nama Lokasi *</label>
-                <input value={form.lokasi.namalokasi} onChange={e => update('lokasi', 'namalokasi', e.target.value)}
+                <input value={form.lokasi.namalokasi} onChange={e => update('lokasi', 'namalokasi', e.target.value.toUpperCase())}
                   className="w-full px-4 py-3 rounded-xl border border-primary-100 bg-warm-50 text-dark-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
                   placeholder="Toko Pusat" />
               </div>

@@ -58,7 +58,7 @@ export default function LokasiForm({ id, lokasi: existingLokasi, onSuccess, tabI
             </div>
             <div>
               <label className={labelClass}>Nama Lokasi *</label>
-              <input value={namalokasi} onChange={(e) => setNamalokasi(e.target.value)} className={inputClass} placeholder="Cabang Utama" />
+              <input value={namalokasi} onChange={(e) => setNamalokasi(e.target.value.toUpperCase())} className={inputClass} placeholder="Cabang Utama" />
             </div>
           </div>
           <div>
