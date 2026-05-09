@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { formatDate, today, firstOfMonth } from '../../lib/utils';
+import { useState, useEffect } from 'react';
+import { today, firstOfMonth } from '../../lib/utils';
 import { useAuthStore } from '../../store/authStore';
 import { Eye, FileBarChart } from 'lucide-react';
+import api from '../../api/axios';
 
 const reportUrl = (type, token, params = {}) => {
   const qs = new URLSearchParams({ format: 'html', token, ...params }).toString();
@@ -12,15 +13,24 @@ export default function LaporanPenjualan() {
   const [tab, setTab] = useState('sales-transaksi');
   const [tglwal, setTglwal] = useState(firstOfMonth());
   const [tglakhir, setTglakhir] = useState(today());
-  const [idbarang, setIdbarang] = useState('');
-  const [idcustomer, setIdcustomer] = useState('');
+  const [namalokasi, setNamalokasi] = useState('');
+  const [namacustomer, setNamacustomer] = useState('');
   const [url, setUrl] = useState('');
+  const [customers, setCustomers] = useState([]);
+  const [lokasis, setLokasis] = useState([]);
   const token = useAuthStore((s) => s.token);
+
+  useEffect(() => {
+    api.get('/customer').then((r) => setCustomers(r.data || [])).catch(() => {});
+    api.get('/lokasi').then((r) => setLokasis(r.data || [])).catch(() => {});
+  }, []);
 
   const generateUrl = () => {
     const params = { tglwal, tglakhir };
-    if (tab === 'sales-transaksi' || tab === 'sales-per-barang') { if (idbarang) params.idbarang = idbarang; }
-    if (tab === 'sales-per-customer' || tab === 'sales-transaksi') { if (idcustomer) params.idcustomer = idcustomer; }
+    if (namalokasi) params.namalokasi = namalokasi;
+    if ((tab === 'sales-transaksi' || tab === 'sales-per-customer') && namacustomer) {
+      params.namacustomer = namacustomer;
+    }
     setUrl(reportUrl(tab, token, params));
   };
 
@@ -29,6 +39,8 @@ export default function LaporanPenjualan() {
     { key: 'sales-per-customer', label: 'Sales Per Customer' },
     { key: 'sales-per-barang', label: 'Sales Per Barang' },
   ];
+
+  const selectClass = 'px-3 py-2 rounded-xl border border-primary-100 text-sm bg-white';
 
   return (
     <div className="space-y-4 mt-4 ms-4">
@@ -58,18 +70,24 @@ export default function LaporanPenjualan() {
             <input type="date" value={tglakhir} onChange={(e) => setTglakhir(e.target.value)}
               className="px-3 py-2 rounded-xl border border-primary-100 text-sm" />
           </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Lokasi</label>
+            <select value={namalokasi} onChange={(e) => setNamalokasi(e.target.value)} className={selectClass}>
+              <option value="">Semua Lokasi</option>
+              {lokasis.map((l) => (
+                <option key={l.idlokasi} value={l.namalokasi}>{l.namalokasi}</option>
+              ))}
+            </select>
+          </div>
           {(tab === 'sales-transaksi' || tab === 'sales-per-customer') && (
             <div>
-              <label className="block text-[10px] font-semibold text-dark-300 mb-1">ID Customer</label>
-              <input value={idcustomer} onChange={(e) => setIdcustomer(e.target.value)}
-                placeholder="Opsional" className="px-3 py-2 rounded-xl border border-primary-100 text-sm w-28" />
-            </div>
-          )}
-          {(tab === 'sales-transaksi' || tab === 'sales-per-barang') && (
-            <div>
-              <label className="block text-[10px] font-semibold text-dark-300 mb-1">ID Barang</label>
-              <input value={idbarang} onChange={(e) => setIdbarang(e.target.value)}
-                placeholder="Opsional" className="px-3 py-2 rounded-xl border border-primary-100 text-sm w-28" />
+              <label className="block text-[10px] font-semibold text-dark-300 mb-1">Customer</label>
+              <select value={namacustomer} onChange={(e) => setNamacustomer(e.target.value)} className={selectClass}>
+                <option value="">Semua Customer</option>
+                {customers.map((c) => (
+                  <option key={c.idcustomer} value={c.namacustomer}>{c.namacustomer}</option>
+                ))}
+              </select>
             </div>
           )}
           <button onClick={generateUrl}
