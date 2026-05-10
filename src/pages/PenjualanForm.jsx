@@ -3,10 +3,11 @@ import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 import { formatRupiah, today } from '../lib/utils';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Search, Trash2, MapPin, Users, Plus, Printer, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, MapPin, Users, Plus, Printer } from 'lucide-react';
 import useTabStore from '../store/tabStore';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/l10n/id.js';
+import { BrowseCustomerModal, BrowseLokasiModal, PpnDropdown, getSatuanOptions, getDefaultSatuan, isJmlValid } from '../lib/formHelpers';
 
 function printFaktur(data, user) {
   const items = data.items || [];
@@ -68,66 +69,6 @@ ${items.map((item, i) => `<tr>
   setTimeout(() => { w.print(); }, 400);
 }
 
-function BrowseCustomerModal({ onSelect, onClose }) {
-  const [customers, setCustomers] = useState([]);
-  const [search, setSearch] = useState('');
-  useEffect(() => {
-    api.get('/customer', search ? { params: { search } } : {}).then(r => setCustomers(r.data));
-  }, [search]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Customer</h3>
-        </div>
-        <div className="p-4">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
-            <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
-              placeholder="Cari customer..." autoFocus
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-          </div>
-          <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-0.5">
-            {customers.length === 0 && (
-              <p className="text-sm text-dark-300 text-center py-6">Tidak ada customer ditemukan</p>
-            )}
-            {customers.map(c => (
-              <button key={c.idcustomer} onClick={() => onSelect(c)}
-                className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-                <p className="text-sm font-semibold text-dark-500">{c.namacustomer}</p>
-                <p className="text-xs text-dark-300">{c.kodecustomer}{c.hp ? ` \u2022 ${c.hp}` : ''}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BrowseLokasiModal({ onSelect, onClose }) {
-  const [lokasiList, setLokasiList] = useState([]);
-  useEffect(() => { api.get('/lokasi').then(r => setLokasiList(r.data)); }, []);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Lokasi</h3>
-        </div>
-        <div className="p-4 space-y-0.5 max-h-64 overflow-y-auto scrollbar-thin">
-          {lokasiList.map(l => (
-            <button key={l.idlokasi} onClick={() => onSelect(l)}
-              className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-              <p className="text-sm font-semibold text-dark-500">{l.namalokasi}</p>
-              <p className="text-xs text-dark-300">{l.kodelokasi}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function BrowseBarangModal({ onSelect, onClose }) {
   const [barangList, setBarangList] = useState([]);
   const [search, setSearch] = useState('');
@@ -187,66 +128,6 @@ function BrowseBarangModal({ onSelect, onClose }) {
       </div>
     </div>
   );
-}
-
-function PpnDropdown({ value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-  const isInclude = value === 'INCLUDE';
-  return (
-    <div className="relative" ref={ref}>
-      <button type="button" onClick={() => setOpen(o => !o)}
-        className={`flex items-center justify-between gap-1.5 w-full px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
-          isInclude ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-            : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
-        }`}>
-        <span className="flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${isInclude ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          {isInclude ? 'INCLUDE' : 'TIDAK'}
-        </span>
-        <ChevronDown className="w-3 h-3 opacity-60" />
-      </button>
-      {open && (
-        <div className="absolute z-30 mt-1 left-0 right-0 bg-white rounded-xl border border-primary-100 shadow-lg min-w-[130px]">
-          <button type="button" onClick={() => { onChange('INCLUDE'); setOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors first:rounded-t-xl ${
-              isInclude ? 'bg-emerald-50 text-emerald-700' : 'text-dark-500 hover:bg-emerald-50 hover:text-emerald-700'
-            }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> INCLUDE
-          </button>
-          <button type="button" onClick={() => { onChange('TIDAK_PAKAI'); setOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors last:rounded-b-xl ${
-              !isInclude ? 'bg-red-50 text-red-700' : 'text-dark-500 hover:bg-red-50 hover:text-red-700'
-            }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> TIDAK
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function getSatuanOptions(item) {
-  const opts = [];
-  if (item.satuanbesar) opts.push(item.satuanbesar);
-  if (item.satuansedang) opts.push(item.satuansedang);
-  if (item.satuankecil) opts.push(item.satuankecil);
-  return opts.length ? opts : ['PCS'];
-}
-
-function getDefaultSatuan(b) {
-  const s = [b.satuanbesar, b.satuansedang, b.satuankecil].find(v => v && String(v).trim());
-  return s ? String(s).trim() : 'PCS';
-}
-
-function isJmlValid(val) {
-  const s = String(val).trim();
-  return s !== '' && /^\d+$/.test(s) && parseInt(s, 10) > 0;
 }
 
 export default function PenjualanForm({ onSuccess, tabId, editData }) {

@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { formatRupiah, today, firstOfMonth } from '../lib/utils';
 import toast from 'react-hot-toast';
 import { Eye, FileDown, Printer, Search, FileBarChart, Package, Users, Building2, ShoppingBag } from 'lucide-react';
+import { BrowseSupplierModal, BrowseCustomerModal, BrowseLokasiModal } from '../lib/formHelpers';
 
 const reportUrl = (type, token, params = {}) => {
   const qs = new URLSearchParams({ format: 'html', token, ...params }).toString();
@@ -32,99 +33,6 @@ function exportPdf(url, token, params) {
   if (w) {
     w.onload = () => setTimeout(() => w.print(), 500);
   }
-}
-
-function BrowseSupplierModal({ onSelect, onClose }) {
-  const [suppliers, setSuppliers] = useState([]);
-  const [search, setSearch] = useState('');
-  useEffect(() => {
-    api.get('/supplier', search ? { params: { search } } : {}).then(r => setSuppliers(r.data));
-  }, [search]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Supplier</h3>
-        </div>
-        <div className="p-4">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
-            <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
-              placeholder="Cari supplier..." autoFocus
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-          </div>
-          <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-0.5">
-            {suppliers.length === 0 && <p className="text-sm text-dark-300 text-center py-6">Tidak ada supplier</p>}
-            {suppliers.map(s => (
-              <button key={s.idsupplier} onClick={() => onSelect(s)}
-                className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-                <p className="text-sm font-semibold text-dark-500">{s.namasupplier}</p>
-                <p className="text-xs text-dark-300">{s.kodesupplier}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BrowseCustomerModal({ onSelect, onClose }) {
-  const [customers, setCustomers] = useState([]);
-  const [search, setSearch] = useState('');
-  useEffect(() => {
-    api.get('/customer', search ? { params: { search } } : {}).then(r => setCustomers(r.data));
-  }, [search]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Customer</h3>
-        </div>
-        <div className="p-4">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
-            <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
-              placeholder="Cari customer..." autoFocus
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
-          </div>
-          <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-0.5">
-            {customers.length === 0 && <p className="text-sm text-dark-300 text-center py-6">Tidak ada customer</p>}
-            {customers.map(c => (
-              <button key={c.idcustomer} onClick={() => onSelect(c)}
-                className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-                <p className="text-sm font-semibold text-dark-500">{c.namacustomer}</p>
-                <p className="text-xs text-dark-300">{c.kodecustomer}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BrowseLokasiModal({ onSelect, onClose }) {
-  const [lokasiList, setLokasiList] = useState([]);
-  useEffect(() => { api.get('/lokasi').then(r => setLokasiList(r.data)); }, []);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-primary-50">
-          <h3 className="text-sm font-bold text-dark-500">Pilih Lokasi</h3>
-        </div>
-        <div className="p-4 space-y-0.5 max-h-64 overflow-y-auto scrollbar-thin">
-          {lokasiList.map(l => (
-            <button key={l.idlokasi} onClick={() => onSelect(l)}
-              className="w-full text-left px-4 py-3 rounded-xl hover:bg-warm-50 transition-colors">
-              <p className="text-sm font-semibold text-dark-500">{l.namalokasi}</p>
-              <p className="text-xs text-dark-300">{l.kodelokasi}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function BrowseBarangModal({ onSelect, onClose }) {

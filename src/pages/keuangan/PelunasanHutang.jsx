@@ -6,10 +6,13 @@ import toast from 'react-hot-toast';
 import { Plus, RefreshCw } from 'lucide-react';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/ui/Pagination';
+import useTabStore from '../../store/tabStore';
+import PelunasanHutangForm from './PelunasanHutangForm';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/l10n/id.js';
 
 export default function PelunasanHutang({ isActive }) {
+  const openTab = useTabStore(s => s.openTab);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
@@ -35,6 +38,10 @@ export default function PelunasanHutang({ isActive }) {
 
   const { page, setPage, totalPages, paginatedItems, resetPage } = usePagination(data, 20);
 
+  const handleTambah = () => {
+    openTab({ label: 'Pelunasan Hutang Baru', icon: Plus, component: PelunasanHutangForm, props: { onSuccess: loadData }, type: 'form_add' });
+  };
+
   const handleDelete = async () => {
     if (!showDeleteModal) return;
     try {
@@ -55,6 +62,10 @@ export default function PelunasanHutang({ isActive }) {
           <p className="text-sm text-dark-300">Kelola pelunasan hutang ke supplier</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={handleTambah}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
+            <Plus className="w-4 h-4" /> Pelunasan Baru
+          </button>
           <button onClick={loadData} className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400 hover:bg-warm-50">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
