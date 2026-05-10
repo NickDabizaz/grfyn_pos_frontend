@@ -1,15 +1,63 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { Printer, Package, RefreshCw } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import useTabStore from '../../store/tabStore';
+import { Printer, Package, RefreshCw, X } from 'lucide-react';
+import MultiSelectModal from '../../components/ui/MultiSelectModal';
+import LaporanResultPage from './LaporanResultPage';
+
+const reportUrl = (token, params = {}) => {
+  const qs = new URLSearchParams({ format: 'html', token, ...params }).toString();
+  return `/api/laporan/stok?${qs}`;
+};
+
+function joinIds(arr, field) {
+  if (!arr || !arr.length) return '';
+  return arr.map((it) => it[field]).filter(Boolean).join(',');
+}
+
+function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-dark-300 mb-1">{label}</label>
+      <div className="flex items-center gap-1.5 flex-wrap min-h-[34px] px-2 py-1.5 rounded-lg border border-primary-100 bg-white">
+        {items.length === 0 && (
+          <span className="text-xs text-dark-300 px-1">{emptyText || 'Semua'}</span>
+        )}
+        {items.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary-100 text-primary-700 text-[10px] font-semibold max-w-[160px]"
+          >
+            <span className="truncate">{item[nameField]}</span>
+            <button onClick={() => onClear(item)} className="hover:text-red-500 shrink-0">
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </span>
+        ))}
+        <button
+          onClick={onBrowse}
+          className="text-[10px] font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-0.5 rounded-md shrink-0"
+        >
+          + Browse
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function LaporanStokSekarang() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState({ totalBarang: 0, totalStok: 0 });
 
+  const token = useAuthStore((s) => s.token);
+  const openTab = useTabStore((s) => s.openTab);
+
   const load = () => {
     setLoading(true);
-    api.get('/laporan/stok')
+    api
+      .get('/laporan/stok')
       .then((r) => {
         setData(r.data.data || []);
         setSummary({
@@ -21,16 +69,26 @@ export default function LaporanStokSekarang() {
       .catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const handlePrint = () => window.print();
+  const handleCetak = () => {
+    openTab({
+      label: 'Laporan Stok Sekarang',
+      component: LaporanResultPage,
+      props: { url: reportUrl(token), label: 'Laporan Stok Sekarang' },
+      type: 'report',
+      kodemenu: null,
+    });
+  };
 
   return (
     <div className="space-y-4 mt-4 ms-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Laporan Stok Sekarang</h2>
-          <p className="text-sm text-dark-300">Posisi stok barang saat ini</p>
+          <p className="text-sm text-dark-300">Filter & cetak laporan stok</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -41,15 +99,14 @@ export default function LaporanStokSekarang() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
           <button
-            onClick={handlePrint}
+            onClick={handleCetak}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all"
           >
-            <Printer className="w-4 h-4" /> Cetak
+            <Printer className="w-4 h-4" /> Cetak Laporan
           </button>
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-primary-100 p-4">
           <div className="flex items-center gap-3">
@@ -75,7 +132,6 @@ export default function LaporanStokSekarang() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
         <table className="w-full">
           <thead>

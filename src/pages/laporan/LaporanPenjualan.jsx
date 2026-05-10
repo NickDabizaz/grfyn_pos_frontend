@@ -1,38 +1,63 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { today, firstOfMonth } from '../../lib/utils';
 import { useAuthStore } from '../../store/authStore';
-import { Eye, FileBarChart } from 'lucide-react';
+import useTabStore from '../../store/tabStore';
+import { Eye, FileBarChart, X } from 'lucide-react';
 import api from '../../api/axios';
+import MultiSelectModal from '../../components/ui/MultiSelectModal';
+import LaporanResultPage from './LaporanResultPage';
 
 const reportUrl = (type, token, params = {}) => {
   const qs = new URLSearchParams({ format: 'html', token, ...params }).toString();
   return `/api/laporan/${type}?${qs}`;
 };
 
+function joinIds(arr, field) {
+  if (!arr || !arr.length) return '';
+  return arr.map((it) => it[field]).filter(Boolean).join(',');
+}
+
+function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-dark-300 mb-1">{label}</label>
+      <div className="flex items-center gap-1.5 flex-wrap min-h-[34px] px-2 py-1.5 rounded-lg border border-primary-100 bg-white">
+        {items.length === 0 && (
+          <span className="text-xs text-dark-300 px-1">{emptyText || 'Semua'}</span>
+        )}
+        {items.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary-100 text-primary-700 text-[10px] font-semibold max-w-[160px]"
+          >
+            <span className="truncate">{item[nameField]}</span>
+            <button onClick={() => onClear(item)} className="hover:text-red-500 shrink-0">
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </span>
+        ))}
+        <button
+          onClick={onBrowse}
+          className="text-[10px] font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-0.5 rounded-md shrink-0"
+        >
+          + Browse
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function LaporanPenjualan() {
   const [tab, setTab] = useState('sales-transaksi');
   const [tglwal, setTglwal] = useState(firstOfMonth());
   const [tglakhir, setTglakhir] = useState(today());
-  const [namalokasi, setNamalokasi] = useState('');
-  const [namacustomer, setNamacustomer] = useState('');
-  const [url, setUrl] = useState('');
-  const [customers, setCustomers] = useState([]);
-  const [lokasis, setLokasis] = useState([]);
+  const [filterCustomers, setFilterCustomers] = useState([]);
+  const [filterLokasis, setFilterLokasis] = useState([]);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showLokasiModal, setShowLokasiModal] = useState(false);
+
   const token = useAuthStore((s) => s.token);
-
-  useEffect(() => {
-    api.get('/customer').then((r) => setCustomers(r.data || [])).catch(() => {});
-    api.get('/lokasi').then((r) => setLokasis(r.data || [])).catch(() => {});
-  }, []);
-
-  const generateUrl = () => {
-    const params = { tglwal, tglakhir };
-    if (namalokasi) params.namalokasi = namalokasi;
-    if ((tab === 'sales-transaksi' || tab === 'sales-per-customer') && namacustomer) {
-      params.namacustomer = namacustomer;
-    }
-    setUrl(reportUrl(tab, token, params));
-  };
+  const openTab = useTabStore((s) => s.openTab);
 
   const reports = [
     { key: 'sales-transaksi', label: 'Sales Transaksi' },
@@ -40,72 +65,135 @@ export default function LaporanPenjualan() {
     { key: 'sales-per-barang', label: 'Sales Per Barang' },
   ];
 
-  const selectClass = 'px-3 py-2 rounded-xl border border-primary-100 text-sm bg-white';
+  const fetchCustomers = (search) =>
+    api.get('/customer', search ? { params: { search } } : {}).then((r) => r.data || []);
+
+  const fetchLokasis = () =>
+    api.get('/lokasi').then((r) => r.data || []);
+
+  const handleGenerate = () => {
+    const params = { tglwal, tglakhir };
+    if (filterCustomers.length) params.kodecustomer = joinIds(filterCustomers, 'kodecustomer');
+    if (filterLokasis.length) params.namalokasi = joinIds(filterLokasis, 'namalokasi');
+    const label = reports.find((r) => r.key === tab)?.label || 'Laporan Penjualan';
+    openTab({
+      label,
+      component: LaporanResultPage,
+      props: { url: reportUrl(tab, token, params), label },
+      type: 'report',
+      kodemenu: null,
+    });
+  };
 
   return (
     <div className="space-y-4 mt-4 ms-4">
       <div>
         <h2 className="text-2xl font-bold text-dark-500">Laporan Penjualan</h2>
-        <p className="text-sm text-dark-300">Generate & cetak laporan penjualan</p>
+        <p className="text-sm text-dark-300">Filter & cetak laporan penjualan</p>
       </div>
 
       <div className="bg-white rounded-2xl p-5 border border-primary-50 space-y-4">
         <div className="flex flex-wrap gap-2">
           {reports.map((r) => (
-            <button key={r.key} onClick={() => { setTab(r.key); setUrl(''); }}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${tab === r.key ? 'bg-primary-500 text-white shadow-sm' : 'bg-warm-50 text-dark-400 hover:bg-warm-100'}`}>
+            <button
+              key={r.key}
+              onClick={() => setTab(r.key)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                tab === r.key
+                  ? 'bg-primary-500 text-white shadow-sm'
+                  : 'bg-warm-50 text-dark-400 hover:bg-warm-100'
+              }`}
+            >
               {r.label}
             </button>
           ))}
         </div>
 
-        <div className="flex items-end gap-3 flex-wrap">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-[10px] font-semibold text-dark-300 mb-1">Dari</label>
-            <input type="date" value={tglwal} onChange={(e) => setTglwal(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-primary-100 text-sm" />
+            <input
+              type="date"
+              value={tglwal}
+              onChange={(e) => setTglwal(e.target.value)}
+              className="w-full px-2 py-2 rounded-lg border border-primary-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+            />
           </div>
           <div>
             <label className="block text-[10px] font-semibold text-dark-300 mb-1">Sampai</label>
-            <input type="date" value={tglakhir} onChange={(e) => setTglakhir(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-primary-100 text-sm" />
+            <input
+              type="date"
+              value={tglakhir}
+              onChange={(e) => setTglakhir(e.target.value)}
+              className="w-full px-2 py-2 rounded-lg border border-primary-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+            />
           </div>
-          <div>
-            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Lokasi</label>
-            <select value={namalokasi} onChange={(e) => setNamalokasi(e.target.value)} className={selectClass}>
-              <option value="">Semua Lokasi</option>
-              {lokasis.map((l) => (
-                <option key={l.idlokasi} value={l.namalokasi}>{l.namalokasi}</option>
-              ))}
-            </select>
-          </div>
-          {(tab === 'sales-transaksi' || tab === 'sales-per-customer') && (
-            <div>
-              <label className="block text-[10px] font-semibold text-dark-300 mb-1">Customer</label>
-              <select value={namacustomer} onChange={(e) => setNamacustomer(e.target.value)} className={selectClass}>
-                <option value="">Semua Customer</option>
-                {customers.map((c) => (
-                  <option key={c.idcustomer} value={c.namacustomer}>{c.namacustomer}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <button onClick={generateUrl}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold transition-all h-fit">
-            <Eye className="w-4 h-4" /> Tampilkan
-          </button>
+
+          <FilterChip
+            label="Customer"
+            items={filterCustomers}
+            nameField="namacustomer"
+            emptyText="Semua"
+            onClear={(c) => setFilterCustomers((prev) => prev.filter((x) => x.idcustomer !== c.idcustomer))}
+            onBrowse={() => setShowCustomerModal(true)}
+          />
+
+          <FilterChip
+            label="Lokasi"
+            items={filterLokasis}
+            nameField="namalokasi"
+            emptyText="Semua"
+            onClear={(l) => setFilterLokasis((prev) => prev.filter((x) => x.idlokasi !== l.idlokasi))}
+            onBrowse={() => setShowLokasiModal(true)}
+          />
         </div>
+
+        <button
+          onClick={handleGenerate}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold transition-all h-fit"
+        >
+          <Eye className="w-4 h-4" /> Cetak Laporan
+        </button>
       </div>
 
-      {url ? (
-        <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden animate-in" style={{ minHeight: '70vh' }}>
-          <iframe src={url} className="w-full border-0" style={{ minHeight: '70vh', height: 'calc(100vh - 300px)' }} title="Laporan Penjualan" />
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-primary-50 p-12 text-center animate-in">
-          <FileBarChart className="w-16 h-16 text-dark-200 mx-auto mb-4" />
-          <p className="text-dark-300 text-sm">Pilih jenis laporan dan filter, lalu klik <strong>Tampilkan</strong></p>
-        </div>
+      <div className="bg-white rounded-2xl border border-primary-50 p-12 text-center animate-in">
+        <FileBarChart className="w-16 h-16 text-dark-200 mx-auto mb-4" />
+        <p className="text-dark-300 text-sm">
+          Pilih jenis laporan dan filter, lalu klik <strong>Cetak Laporan</strong>
+        </p>
+      </div>
+
+      {showCustomerModal && (
+        <MultiSelectModal
+          title="Pilih Customer"
+          fetchItems={fetchCustomers}
+          initialSelected={filterCustomers}
+          onConfirm={(items) => {
+            setFilterCustomers(items);
+            setShowCustomerModal(false);
+          }}
+          onClose={() => setShowCustomerModal(false)}
+          idField="idcustomer"
+          labelField="namacustomer"
+          subField="kodecustomer"
+          searchPlaceholder="Cari customer..."
+        />
+      )}
+      {showLokasiModal && (
+        <MultiSelectModal
+          title="Pilih Lokasi"
+          fetchItems={fetchLokasis}
+          initialSelected={filterLokasis}
+          onConfirm={(items) => {
+            setFilterLokasis(items);
+            setShowLokasiModal(false);
+          }}
+          onClose={() => setShowLokasiModal(false)}
+          idField="idlokasi"
+          labelField="namalokasi"
+          subField="kodelokasi"
+          searchPlaceholder="Cari lokasi..."
+        />
       )}
     </div>
   );

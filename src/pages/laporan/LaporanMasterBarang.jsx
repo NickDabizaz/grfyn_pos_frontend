@@ -1,22 +1,38 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import useTabStore from '../../store/tabStore';
 import { Printer, Package } from 'lucide-react';
+import LaporanResultPage from './LaporanResultPage';
 
 export default function LaporanMasterBarang() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const openTab = useTabStore((s) => s.openTab);
 
   const load = () => {
     setLoading(true);
-    api.get('/barang?limit=500').then((r) => {
-      setData(r.data.data || r.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    api
+      .get('/barang?limit=500')
+      .then((r) => {
+        setData(r.data.data || r.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const handlePrint = () => window.print();
+  const handleCetak = () => {
+    openTab({
+      label: 'Laporan Master Barang',
+      component: LaporanResultPage,
+      props: { data, type: 'barang', label: 'Laporan Master Barang' },
+      type: 'report',
+      kodemenu: null,
+    });
+  };
 
   return (
     <div className="space-y-4 mt-4 ms-4">
@@ -25,8 +41,10 @@ export default function LaporanMasterBarang() {
           <h2 className="text-2xl font-bold text-dark-500">Laporan Master Barang</h2>
           <p className="text-sm text-dark-300">Daftar seluruh barang</p>
         </div>
-        <button onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all">
+        <button
+          onClick={handleCetak}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all"
+        >
           <Printer className="w-4 h-4" /> Cetak
         </button>
       </div>
@@ -59,7 +77,11 @@ export default function LaporanMasterBarang() {
               </tr>
             ))}
             {data.length === 0 && !loading && (
-              <tr><td colSpan="8" className="px-4 py-8 text-center text-sm text-dark-300">Tidak ada data</td></tr>
+              <tr>
+                <td colSpan="8" className="px-4 py-8 text-center text-sm text-dark-300">
+                  Tidak ada data
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

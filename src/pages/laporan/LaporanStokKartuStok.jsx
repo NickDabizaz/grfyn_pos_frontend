@@ -1,31 +1,73 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { Printer, Search, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import useTabStore from '../../store/tabStore';
+import { Printer, Search, RefreshCw, TrendingUp, TrendingDown, X } from 'lucide-react';
+import MultiSelectModal from '../../components/ui/MultiSelectModal';
+import LaporanResultPage from './LaporanResultPage';
+
+const reportUrl = (token, params = {}) => {
+  const qs = new URLSearchParams({ format: 'html', token, ...params }).toString();
+  return `/api/laporan/kartu-stok?${qs}`;
+};
+
+function joinIds(arr, field) {
+  if (!arr || !arr.length) return '';
+  return arr.map((it) => it[field]).filter(Boolean).join(',');
+}
+
+function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-dark-300 mb-1">{label}</label>
+      <div className="flex items-center gap-1.5 flex-wrap min-h-[34px] px-2 py-1.5 rounded-lg border border-primary-100 bg-white">
+        {items.length === 0 && (
+          <span className="text-xs text-dark-300 px-1">{emptyText || 'Semua'}</span>
+        )}
+        {items.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary-100 text-primary-700 text-[10px] font-semibold max-w-[160px]"
+          >
+            <span className="truncate">{item[nameField]}</span>
+            <button onClick={() => onClear(item)} className="hover:text-red-500 shrink-0">
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </span>
+        ))}
+        <button
+          onClick={onBrowse}
+          className="text-[10px] font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-2 py-0.5 rounded-md shrink-0"
+        >
+          + Browse
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function LaporanStokKartuStok() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [barangList, setBarangList] = useState([]);
+  const [filterBarangs, setFilterBarangs] = useState([]);
+  const [showBarangModal, setShowBarangModal] = useState(false);
   const [filters, setFilters] = useState({
-    idbarang: '',
     tglwal: '',
     tglakhir: '',
   });
 
-  const loadBarang = () => {
-    api.get('/barang?limit=500').then((r) => {
-      setBarangList(r.data.data || r.data);
-    }).catch(() => {});
-  };
+  const token = useAuthStore((s) => s.token);
+  const openTab = useTabStore((s) => s.openTab);
 
   const load = () => {
     setLoading(true);
     const params = {};
-    if (filters.idbarang) params.idbarang = filters.idbarang;
+    if (filterBarangs.length) params.idbarang = joinIds(filterBarangs, 'idbarang');
     if (filters.tglwal) params.tglwal = filters.tglwal;
     if (filters.tglakhir) params.tglakhir = filters.tglakhir;
 
-    api.get('/laporan/kartu-stok', { params })
+    api
+      .get('/laporan/kartu-stok', { params })
       .then((r) => {
         setData(r.data.data || []);
         setLoading(false);
@@ -34,48 +76,57 @@ export default function LaporanStokKartuStok() {
   };
 
   useEffect(() => {
-    loadBarang();
     load();
   }, []);
+
+  const fetchBarangs = (search) =>
+    api.get('/barang/browse-barang', search ? { params: { search } } : {}).then((r) => r.data || []);
 
   const handleSearch = () => {
     load();
   };
 
-  const handlePrint = () => window.print();
+  const handleCetak = () => {
+    const params = {};
+    if (filterBarangs.length) params.idbarang = joinIds(filterBarangs, 'idbarang');
+    if (filters.tglwal) params.tglwal = filters.tglwal;
+    if (filters.tglakhir) params.tglakhir = filters.tglakhir;
+    openTab({
+      label: 'Laporan Kartu Stok',
+      component: LaporanResultPage,
+      props: { url: reportUrl(token, params), label: 'Laporan Kartu Stok' },
+      type: 'report',
+      kodemenu: null,
+    });
+  };
 
   return (
     <div className="space-y-4 mt-4 ms-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-dark-500">Laporan Kartu Stok</h2>
-          <p className="text-sm text-dark-300">Riwayat pergerakan stok barang</p>
+          <p className="text-sm text-dark-300">Filter & cetak riwayat pergerakan stok</p>
         </div>
         <button
-          onClick={handlePrint}
+          onClick={handleCetak}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all"
         >
-          <Printer className="w-4 h-4" /> Cetak
+          <Printer className="w-4 h-4" /> Cetak Laporan
         </button>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-2xl border border-primary-50 p-4">
         <div className="grid grid-cols-4 gap-3">
           <div>
             <label className="block text-xs font-semibold text-dark-400 mb-1.5">Barang</label>
-            <select
-              value={filters.idbarang}
-              onChange={(e) => setFilters({ ...filters, idbarang: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-primary-100 bg-warm-50 text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Semua Barang</option>
-              {barangList.map((b) => (
-                <option key={b.idbarang} value={b.idbarang}>
-                  {b.kodebarang} - {b.namabarang}
-                </option>
-              ))}
-            </select>
+            <FilterChip
+              label=""
+              items={filterBarangs}
+              nameField="namabarang"
+              emptyText="Semua barang"
+              onClear={(b) => setFilterBarangs((prev) => prev.filter((x) => x.idbarang !== b.idbarang))}
+              onBrowse={() => setShowBarangModal(true)}
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal Awal</label>
@@ -114,7 +165,6 @@ export default function LaporanStokKartuStok() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -178,6 +228,23 @@ export default function LaporanStokKartuStok() {
           </tbody>
         </table>
       </div>
+
+      {showBarangModal && (
+        <MultiSelectModal
+          title="Pilih Barang"
+          fetchItems={fetchBarangs}
+          initialSelected={filterBarangs}
+          onConfirm={(items) => {
+            setFilterBarangs(items);
+            setShowBarangModal(false);
+          }}
+          onClose={() => setShowBarangModal(false)}
+          idField="idbarang"
+          labelField="namabarang"
+          subField="kodebarang"
+          searchPlaceholder="Cari kode / nama barang..."
+        />
+      )}
     </div>
   );
 }

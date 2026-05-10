@@ -290,7 +290,7 @@ export default function PelunasanHutangForm({ onSuccess, tabId, editData }) {
                       const isSelected = selectedIds.has(inv.kodetrans);
                       const sisa = parseFloat(inv.sisa) || 0;
                       const original = parseFloat(inv.original_amount) || 0;
-                      const terbayar = parseFloat(inv.total_terbayar) || 0;
+                      const terbayar = parseFloat(inv.terbayar) || 0;
                       return (
                         <tr key={inv.kodetrans}
                           className={`border-b border-primary-50/50 transition-colors ${isSelected ? 'bg-primary-50/40' : 'hover:bg-warm-50/20'}`}>
