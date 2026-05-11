@@ -5,9 +5,10 @@ import toast from 'react-hot-toast';
 /**
  * Generic CRUD operations hook
  * @param {string} endpoint - API endpoint (e.g., '/barang')
+ * @param {object} options - Options for the hook (e.g., { showToast: false })
  * @returns {object} CRUD operations and loading state
  */
-export function useCrudApi(endpoint) {
+export function useCrudApi(endpoint, options = { showToast: false }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,7 +21,7 @@ export function useCrudApi(endpoint) {
     } catch (err) {
       const message = err.response?.data?.message || 'Gagal memuat data';
       setError(message);
-      toast.error(message);
+      if (options.showToast) toast.error(message);
       throw err;
     } finally {
       setLoading(false);
@@ -36,7 +37,7 @@ export function useCrudApi(endpoint) {
     } catch (err) {
       const message = err.response?.data?.message || 'Gagal memuat data';
       setError(message);
-      toast.error(message);
+      if (options.showToast) toast.error(message);
       throw err;
     } finally {
       setLoading(false);
@@ -48,12 +49,12 @@ export function useCrudApi(endpoint) {
     setError(null);
     try {
       const { data } = await axios.post(endpoint, payload);
-      toast.success(data.message || 'Data berhasil disimpan');
+      if (options.showToast) toast.success(data.message || 'Data berhasil disimpan');
       return data;
     } catch (err) {
       const message = err.response?.data?.message || 'Gagal menyimpan data';
       setError(message);
-      toast.error(message);
+      if (options.showToast) toast.error(message);
       throw err;
     } finally {
       setLoading(false);
@@ -65,12 +66,12 @@ export function useCrudApi(endpoint) {
     setError(null);
     try {
       const { data } = await axios.put(`${endpoint}/${id}`, payload);
-      toast.success(data.message || 'Data berhasil diperbarui');
+      if (options.showToast) toast.success(data.message || 'Data berhasil diperbarui');
       return data;
     } catch (err) {
       const message = err.response?.data?.message || 'Gagal memperbarui data';
       setError(message);
-      toast.error(message);
+      if (options.showToast) toast.error(message);
       throw err;
     } finally {
       setLoading(false);
@@ -82,12 +83,12 @@ export function useCrudApi(endpoint) {
     setError(null);
     try {
       const { data } = await axios.delete(`${endpoint}/${id}`);
-      toast.success(data.message || 'Data berhasil dihapus');
+      if (options.showToast) toast.success(data.message || 'Data berhasil dihapus');
       return data;
     } catch (err) {
       const message = err.response?.data?.message || 'Gagal menghapus data';
       setError(message);
-      toast.error(message);
+      if (options.showToast) toast.error(message);
       throw err;
     } finally {
       setLoading(false);
