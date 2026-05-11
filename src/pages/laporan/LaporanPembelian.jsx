@@ -48,6 +48,7 @@ function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
 }
 
 export default function LaporanPembelian() {
+  const [tab, setTab] = useState('pembelian');
   const [tglwal, setTglwal] = useState(firstOfMonth());
   const [tglakhir, setTglakhir] = useState(today());
   const [filterSuppliers, setFilterSuppliers] = useState([]);
@@ -56,16 +57,24 @@ export default function LaporanPembelian() {
   const token = useAuthStore((s) => s.token);
   const openTab = useTabStore((s) => s.openTab);
 
+  const reports = [
+    { key: 'pembelian', label: 'Pembelian Transaksi' },
+    { key: 'pembelian-per-supplier', label: 'Pembelian Per Supplier' },
+    { key: 'pembelian-per-barang', label: 'Pembelian Per Barang' },
+  ];
+
   const fetchSuppliers = (search) =>
     api.get('/supplier', search ? { params: { search } } : {}).then((r) => r.data || []);
 
   const handleGenerate = () => {
     const params = { tglwal, tglakhir };
     if (filterSuppliers.length) params.idsupplier = joinIds(filterSuppliers, 'idsupplier');
+    const label = reports.find((r) => r.key === tab)?.label || 'Laporan Pembelian';
+    
     openTab({
-      label: 'Laporan Pembelian',
+      label,
       component: LaporanResultPage,
-      props: { url: reportUrl('pembelian', token, params), label: 'Laporan Pembelian' },
+      props: { url: reportUrl(tab, token, params), label },
       type: 'report',
       kodemenu: null,
     });
@@ -79,6 +88,22 @@ export default function LaporanPembelian() {
       </div>
 
       <div className="bg-white rounded-2xl p-5 border border-primary-50 space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {reports.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setTab(r.key)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                tab === r.key
+                  ? 'bg-primary-500 text-white shadow-sm'
+                  : 'bg-warm-50 text-dark-400 hover:bg-warm-100'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <label className="block text-[10px] font-semibold text-dark-300 mb-1">Dari</label>
@@ -120,7 +145,7 @@ export default function LaporanPembelian() {
       <div className="bg-white rounded-2xl border border-primary-50 p-12 text-center animate-in">
         <FileBarChart className="w-16 h-16 text-dark-200 mx-auto mb-4" />
         <p className="text-dark-300 text-sm">
-          Pilih filter tanggal, lalu klik <strong>Cetak Laporan</strong>
+          Pilih jenis laporan dan filter, lalu klik <strong>Cetak Laporan</strong>
         </p>
       </div>
 

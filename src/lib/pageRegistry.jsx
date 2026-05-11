@@ -1,7 +1,7 @@
-import { LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse, ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin, ClipboardList, Calculator, Undo2, Repeat, Wallet } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse, ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin, ClipboardList, Calculator, Undo2, Repeat, Wallet, Factory } from 'lucide-react';
 
 import Dashboard from '../pages/Dashboard';
-import Pos from '../pages/Pos';
+import PosLayout from '../pages/pos/PosLayout';
 import Barang from '../pages/Barang';
 import Supplier from '../pages/Supplier';
 import Customer from '../pages/Customer';
@@ -26,6 +26,7 @@ import Laporan from '../pages/Laporan';
 import PelunasanPiutang from '../pages/keuangan/PelunasanPiutang';
 import PelunasanHutang from '../pages/keuangan/PelunasanHutang';
 import LaporanBarang from '../pages/laporan/LaporanBarang';
+import Produksi from '../pages/Produksi';
 
 const registry = {
   'dashboard': {
@@ -35,7 +36,7 @@ const registry = {
     closable : false,
   },
   'pos': {
-    component: Pos,
+    component: PosLayout,
     label    : 'POS',
     icon     : ShoppingCart,
   },
@@ -103,6 +104,11 @@ const registry = {
     component: HitungHPP,
     label    : 'Hitung HPP',
     icon     : Calculator,
+  },
+  'stok.produksi': {
+    component: Produksi,
+    label    : 'Produksi',
+    icon     : Factory,
   },
   'stok.kartustok': {
     component: () => (

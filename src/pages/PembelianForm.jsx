@@ -103,6 +103,7 @@ function BrowseBarangModal({ onSelect, onClose }) {
                     <th className="text-left px-3 py-2 text-xs text-dark-300">Kode</th>
                     <th className="text-left px-3 py-2 text-xs text-dark-300">Nama Barang</th>
                     <th className="text-left px-3 py-2 text-xs text-dark-300">Satuan</th>
+                    <th className="text-right px-3 py-2 text-xs text-dark-300">Stok</th>
                     <th className="text-right px-3 py-2 text-xs text-dark-300">Harga Beli</th>
                   </tr>
                 </thead>
@@ -114,6 +115,9 @@ function BrowseBarangModal({ onSelect, onClose }) {
                       <td className="px-3 py-2.5 font-medium text-dark-500">{b.namabarang}</td>
                       <td className="px-3 py-2.5 text-dark-400 text-xs">
                         {b.satuanbesar || b.satuansedang || b.satuankecil || '-'}
+                      </td>
+                      <td className={`px-3 py-2.5 text-right font-mono text-xs font-semibold ${Number(b.stok) > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {Number(b.stok || 0)}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-dark-400 text-xs">
                         {formatRupiah(b.hargabeli_terbaru)}
@@ -163,6 +167,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
           satuankecil:     item.satuankecil  || null,
           konversi1:       item.konversi1    || 0,
           konversi2:       item.konversi2    || 0,
+          stok:            item.stok         || 0,
           satuan:          item.satuan || getDefaultSatuan(item),
           jml:             String(item.jml),
           harga_sebelumnya: parseFloat(item.harga) || 0,
@@ -177,7 +182,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
   const [showBarangModal, setShowBarangModal]     = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [langsungLunas, setLangsungLunas] = useState(editData.statuslunas == 'LUNAS');
+  const [langsungLunas, setLangsungLunas] = useState(editData?.statuslunas == 'LUNAS');
   const ppnPercent = user?.ppn || 11;
 
   const addBarang = (b) => {
@@ -196,6 +201,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
       satuankecil:  b.satuankecil  || null,
       konversi1:    b.konversi1    || 0,
       konversi2:    b.konversi2    || 0,
+      stok:         b.stok         || 0,
       satuan:           getDefaultSatuan(b),
       jml:              '1',
       harga_sebelumnya: hargaSebelumnya,
@@ -422,6 +428,7 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
                     <th className="text-left   px-3 py-2.5 text-xs font-semibold text-dark-300 w-28">Kode</th>
                     <th className="text-left   px-3 py-2.5 text-xs font-semibold text-dark-300">Nama Barang</th>
                     <th className="text-left   px-3 py-2.5 text-xs font-semibold text-dark-300 w-28">Satuan</th>
+                    <th className="text-center px-3 py-2.5 text-xs font-semibold text-dark-300 w-20">Stok</th>
                     <th className="text-center px-3 py-2.5 text-xs font-semibold text-dark-300 w-20">Jumlah</th>
                     <th className="text-right  px-3 py-2.5 text-xs font-semibold text-dark-300 w-36">Harga Beli Sblm</th>
                     <th className="text-right  px-3 py-2.5 text-xs font-semibold text-dark-300 w-36">Harga Beli</th>
@@ -452,6 +459,9 @@ export default function PembelianForm({ onSuccess, tabId, editData }) {
                             className="w-full px-2 py-1.5 rounded-lg border border-primary-100 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary-500/20">
                             {satuanOpts.map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
+                        </td>
+                        <td className={`px-3 py-2.5 text-center font-mono text-xs font-semibold ${Number(rawItem.stok) > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {Number(rawItem.stok || 0)}
                         </td>
                         <td className="px-3 py-2.5">
                           <input type="text" value={Number(rawItem.jml)}

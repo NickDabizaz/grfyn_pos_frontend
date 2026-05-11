@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
-import SearchableSelect from '../components/ui/SearchableSelect';
 import useTabStore from '../store/tabStore';
 
 const INIT = { namabarang: '', satuanbesar: '', satuansedang: '', satuankecil: '', konversi1: 1, konversi2: 1, jenis: 'BAHAN JADI', stokmin: 1, hargabeli: '0', hargajual: '0', status: 'AKTIF' };
@@ -158,14 +157,18 @@ export default function BarangForm({ mode, idbarang, data, onSuccess, tabId, isA
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-dark-400 mb-1">Jenis</label>
-              <SearchableSelect
+              <select
                 value={form.jenis}
-                onChange={(val) => setForm({ ...form, jenis: val })}
-                options={jenisOptions}
-              />
+                onChange={(e) => setForm({ ...form, jenis: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 bg-white"
+              >
+                {jenisOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-dark-400 mb-1">Stok Minimum (Satuan Terkecil)</label>

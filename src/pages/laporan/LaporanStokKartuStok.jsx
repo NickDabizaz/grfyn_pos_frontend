@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import api from '../../api/axios';
+import { today, firstOfMonth } from '../../lib/utils';
 import { useAuthStore } from '../../store/authStore';
 import useTabStore from '../../store/tabStore';
-import { Printer, Search, RefreshCw, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { Eye, FileBarChart, X } from 'lucide-react';
+import api from '../../api/axios';
 import MultiSelectModal from '../../components/ui/MultiSelectModal';
 import LaporanResultPage from './LaporanResultPage';
 
@@ -29,7 +30,7 @@ function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
             key={i}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary-100 text-primary-700 text-[10px] font-semibold max-w-[160px]"
           >
-            <span className="truncate">{item[nameField]}</span>
+            <span className="truncate">{item[nameField] || item}</span>
             <button onClick={() => onClear(item)} className="hover:text-red-500 shrink-0">
               <X className="w-2.5 h-2.5" />
             </button>
@@ -47,50 +48,27 @@ function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
 }
 
 export default function LaporanStokKartuStok() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [tglwal, setTglwal] = useState(firstOfMonth());
+  const [tglakhir, setTglakhir] = useState(today());
   const [filterBarangs, setFilterBarangs] = useState([]);
+  const [filterJenis, setFilterJenis] = useState([]);
   const [showBarangModal, setShowBarangModal] = useState(false);
-  const [filters, setFilters] = useState({
-    tglwal: '',
-    tglakhir: '',
-  });
+  const [showJenisModal, setShowJenisModal] = useState(false);
 
   const token = useAuthStore((s) => s.token);
   const openTab = useTabStore((s) => s.openTab);
 
-  const load = () => {
-    setLoading(true);
-    const params = {};
-    if (filterBarangs.length) params.idbarang = joinIds(filterBarangs, 'idbarang');
-    if (filters.tglwal) params.tglwal = filters.tglwal;
-    if (filters.tglakhir) params.tglakhir = filters.tglakhir;
-
-    api
-      .get('/laporan/kartu-stok', { params })
-      .then((r) => {
-        setData(r.data.data || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
   const fetchBarangs = (search) =>
     api.get('/barang/browse-barang', search ? { params: { search } } : {}).then((r) => r.data || []);
 
-  const handleSearch = () => {
-    load();
-  };
+  const fetchJenis = () =>
+    api.get('/laporan/jenisref-kartustok').then((r) => (r.data || []).map(j => ({ id: j, nama: j })));
 
-  const handleCetak = () => {
-    const params = {};
+  const handleGenerate = () => {
+    const params = { tglwal, tglakhir };
     if (filterBarangs.length) params.idbarang = joinIds(filterBarangs, 'idbarang');
-    if (filters.tglwal) params.tglwal = filters.tglwal;
-    if (filters.tglakhir) params.tglakhir = filters.tglakhir;
+    if (filterJenis.length) params.jenisref = filterJenis.map(j => j.id).join(',');
+    
     openTab({
       label: 'Laporan Kartu Stok',
       component: LaporanResultPage,
@@ -102,131 +80,64 @@ export default function LaporanStokKartuStok() {
 
   return (
     <div className="space-y-4 mt-4 ms-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-dark-500">Laporan Kartu Stok</h2>
-          <p className="text-sm text-dark-300">Filter & cetak riwayat pergerakan stok</p>
+      <div>
+        <h2 className="text-2xl font-bold text-dark-500">Laporan Kartu Stok</h2>
+        <p className="text-sm text-dark-300">Filter & cetak laporan kartu stok</p>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 border border-primary-50 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Dari</label>
+            <input
+              type="date"
+              value={tglwal}
+              onChange={(e) => setTglwal(e.target.value)}
+              className="w-full px-2 py-2 rounded-lg border border-primary-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-dark-300 mb-1">Sampai</label>
+            <input
+              type="date"
+              value={tglakhir}
+              onChange={(e) => setTglakhir(e.target.value)}
+              className="w-full px-2 py-2 rounded-lg border border-primary-100 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+            />
+          </div>
+
+          <FilterChip
+            label="Barang"
+            items={filterBarangs}
+            nameField="namabarang"
+            emptyText="Semua Barang"
+            onClear={(b) => setFilterBarangs((prev) => prev.filter((x) => x.idbarang !== b.idbarang))}
+            onBrowse={() => setShowBarangModal(true)}
+          />
+
+          <FilterChip
+            label="Jenis Transaksi"
+            items={filterJenis}
+            nameField="nama"
+            emptyText="Semua Jenis"
+            onClear={(j) => setFilterJenis((prev) => prev.filter((x) => x.id !== j.id))}
+            onBrowse={() => setShowJenisModal(true)}
+          />
         </div>
+
         <button
-          onClick={handleCetak}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all"
+          onClick={handleGenerate}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold transition-all h-fit"
         >
-          <Printer className="w-4 h-4" /> Cetak Laporan
+          <Eye className="w-4 h-4" /> Cetak Laporan
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-primary-50 p-4">
-        <div className="grid grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-dark-400 mb-1.5">Barang</label>
-            <FilterChip
-              label=""
-              items={filterBarangs}
-              nameField="namabarang"
-              emptyText="Semua barang"
-              onClear={(b) => setFilterBarangs((prev) => prev.filter((x) => x.idbarang !== b.idbarang))}
-              onBrowse={() => setShowBarangModal(true)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal Awal</label>
-            <input
-              type="date"
-              value={filters.tglwal}
-              onChange={(e) => setFilters({ ...filters, tglwal: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-primary-100 bg-warm-50 text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-dark-400 mb-1.5">Tanggal Akhir</label>
-            <input
-              type="date"
-              value={filters.tglakhir}
-              onChange={(e) => setFilters({ ...filters, tglakhir: e.target.value })}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-primary-100 bg-warm-50 text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <button
-              onClick={handleSearch}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all disabled:opacity-50"
-            >
-              <Search className="w-4 h-4" /> Cari
-            </button>
-            <button
-              onClick={load}
-              disabled={loading}
-              className="px-3 py-2 rounded-lg bg-warm-100 hover:bg-warm-200 text-dark-500 text-sm font-semibold transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-primary-50 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-primary-50 bg-warm-50/50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">No</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Nama Barang</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Satuan</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Keterangan</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Jenis</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-dark-300">Jumlah</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((item, i) => {
-              const isMasuk = item.jenis === 'M';
-              const jml = parseInt(item.jml) || 0;
-
-              return (
-                <tr key={item.idkartustok || i} className="border-b border-primary-50/50 hover:bg-warm-50/30 text-sm">
-                  <td className="px-4 py-3 text-dark-400">{i + 1}</td>
-                  <td className="px-4 py-3 text-dark-400">
-                    {new Date(item.tgltrans).toLocaleDateString('id-ID')}
-                  </td>
-                  <td className="px-4 py-3 text-xs font-mono text-dark-300">{item.kodebarang}</td>
-                  <td className="px-4 py-3 font-medium text-dark-500">{item.namabarang}</td>
-                  <td className="px-4 py-3 text-dark-400">{item.satuan || '-'}</td>
-                  <td className="px-4 py-3 text-dark-400">{item.keterangan || '-'}</td>
-                  <td className="px-4 py-3 text-center">
-                    {isMasuk ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                        <TrendingUp className="w-3 h-3" /> Masuk
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                        <TrendingDown className="w-3 h-3" /> Keluar
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-dark-500">
-                    {jml.toLocaleString('id-ID')}
-                  </td>
-                </tr>
-              );
-            })}
-            {data.length === 0 && !loading && (
-              <tr>
-                <td colSpan="8" className="px-4 py-8 text-center text-sm text-dark-300">
-                  Tidak ada data. Gunakan filter untuk menampilkan data.
-                </td>
-              </tr>
-            )}
-            {loading && (
-              <tr>
-                <td colSpan="8" className="px-4 py-8 text-center text-sm text-dark-300">
-                  Memuat data...
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="bg-white rounded-2xl border border-primary-50 p-12 text-center animate-in">
+        <FileBarChart className="w-16 h-16 text-dark-200 mx-auto mb-4" />
+        <p className="text-dark-300 text-sm">
+          Pilih filter tanggal, barang, dan jenis transaksi, lalu klik <strong>Cetak Laporan</strong>
+        </p>
       </div>
 
       {showBarangModal && (
@@ -242,7 +153,23 @@ export default function LaporanStokKartuStok() {
           idField="idbarang"
           labelField="namabarang"
           subField="kodebarang"
-          searchPlaceholder="Cari kode / nama barang..."
+          searchPlaceholder="Cari barang..."
+        />
+      )}
+
+      {showJenisModal && (
+        <MultiSelectModal
+          title="Pilih Jenis Transaksi"
+          fetchItems={fetchJenis}
+          initialSelected={filterJenis}
+          onConfirm={(items) => {
+            setFilterJenis(items);
+            setShowJenisModal(false);
+          }}
+          onClose={() => setShowJenisModal(false)}
+          idField="id"
+          labelField="nama"
+          searchPlaceholder="Cari jenis..."
         />
       )}
     </div>

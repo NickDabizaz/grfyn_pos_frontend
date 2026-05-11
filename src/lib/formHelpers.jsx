@@ -196,7 +196,7 @@ export function isJmlValid(val) {
 
 export function isFloatValid(val) {
   const s = String(val).trim();
-  return s !== '' && /^\d+([.,]\d+)?$/.test(s) && parseFloat(s.replace(',', '.')) > 0;
+  return s !== '' && /^\d+([.,]\d+)?$/.test(s) && parseFloat(s.replace(',', '.')) >= 0;
 }
 
 export function parseFloatVal(val) {
