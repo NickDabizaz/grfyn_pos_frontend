@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Plus, X, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Save, Loader2, ChevronDown } from 'lucide-react';
 import useTabStore from '../store/tabStore';
 
 export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
@@ -22,6 +22,7 @@ export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
   const [selectedLokasi, setSelectedLokasi] = useState([]);
   const [allTemplates, setAllTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [expandedMenus, setExpandedMenus] = useState(new Set());
 
   useEffect(() => {
     async function loadRefs() {
@@ -52,8 +53,88 @@ export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
     loadRefs();
   }, []);
 
-  const toggleMenu = (idmenu) => {
-    setSelectedMenus(prev => prev.includes(idmenu) ? prev.filter(m => m !== idmenu) : [...prev, idmenu]);
+  const getAllIds = (item) => {
+    return [item.idmenu, ...(item.children || []).flatMap(getAllIds)];
+  };
+
+  const handleMenuToggle = (item, checked) => {
+    const ids = getAllIds(item);
+    setSelectedMenus(prev => {
+      const next = new Set(prev);
+      if (checked) ids.forEach(id => next.add(id));
+      else ids.forEach(id => next.delete(id));
+      return [...next];
+    });
+  };
+
+  const getCheckedState = (item, selectedSet) => {
+    if (!item.children?.length) return selectedSet.has(item.idmenu) ? 'all' : 'none';
+    const desc = getAllIds(item).slice(1);
+    const n = desc.filter(id => selectedSet.has(id)).length;
+    if (n === 0) return 'none';
+    if (n === desc.length) return 'all';
+    return 'some';
+  };
+
+  const MenuTreeItem = ({ item, level, selectedSet, onToggle, expandedSet, onToggleExpand }) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const checkboxRef = useRef(null);
+    const checkedState = getCheckedState(item, selectedSet);
+    const isOpen = expandedSet.has(item.idmenu);
+
+    useEffect(() => {
+      if (checkboxRef.current) {
+        checkboxRef.current.indeterminate = checkedState === 'some';
+        checkboxRef.current.checked = checkedState === 'all' || checkedState === 'some';
+      }
+    }, [checkedState]);
+
+    return (
+      <div>
+        <label
+          className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-warm-50 px-2 rounded text-sm"
+          style={{ paddingLeft: `${level * 16}px` }}
+        >
+          {hasChildren && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onToggleExpand(item.idmenu);
+              }}
+              className="p-0 hover:bg-warm-100 rounded"
+            >
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+            </button>
+          )}
+          {!hasChildren && <span className="w-3.5" />}
+          <input
+            ref={checkboxRef}
+            type="checkbox"
+            checked={checkedState === 'all'}
+            onChange={(e) => onToggle(item, e.target.checked)}
+            className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+          />
+          <span className={checkedState === 'some' ? 'font-medium text-amber-600' : 'text-dark-400'}>
+            {item.namamenu}
+          </span>
+        </label>
+        {hasChildren && isOpen && (
+          <div>
+            {item.children.map((child) => (
+              <MenuTreeItem
+                key={child.idmenu}
+                item={child}
+                level={level + 1}
+                selectedSet={selectedSet}
+                onToggle={onToggle}
+                expandedSet={expandedSet}
+                onToggleExpand={onToggleExpand}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const toggleLokasi = (idlokasi) => {
@@ -155,12 +236,21 @@ export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
           {/* Menu */}
           <div>
             <label className={labelClass}>Menu Akses</label>
-            <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1">
+            <div className="border border-gray-200 rounded-lg p-3 max-h-64 overflow-y-auto space-y-0.5">
               {allMenus.map(m => (
-                <label key={m.idmenu} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-warm-50 px-2 rounded text-sm">
-                  <input type="checkbox" checked={selectedMenus.includes(m.idmenu)} onChange={() => toggleMenu(m.idmenu)} className="rounded border-gray-300 text-primary-500 focus:ring-primary-500" />
-                  <span className="text-dark-400">{m.namamenu}</span>
-                </label>
+                <MenuTreeItem
+                  key={m.idmenu}
+                  item={m}
+                  level={0}
+                  selectedSet={new Set(selectedMenus)}
+                  onToggle={handleMenuToggle}
+                  expandedSet={expandedMenus}
+                  onToggleExpand={(k) => setExpandedMenus(prev => {
+                    const n = new Set(prev);
+                    n.has(k) ? n.delete(k) : n.add(k);
+                    return n;
+                  })}
+                />
               ))}
             </div>
           </div>
