@@ -63,6 +63,7 @@ export default function LaporanPenjualan() {
     { key: 'sales-transaksi', label: 'Sales Transaksi' },
     { key: 'sales-per-customer', label: 'Sales Per Customer' },
     { key: 'sales-per-barang', label: 'Sales Per Barang' },
+    { key: 'sales-per-lokasi', label: 'Sales Per Lokasi' },
   ];
 
   const fetchCustomers = (search) =>

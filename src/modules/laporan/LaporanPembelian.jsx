@@ -61,6 +61,7 @@ export default function LaporanPembelian() {
     { key: 'pembelian', label: 'Pembelian Transaksi' },
     { key: 'pembelian-per-supplier', label: 'Pembelian Per Supplier' },
     { key: 'pembelian-per-barang', label: 'Pembelian Per Barang' },
+    { key: 'pembelian-per-lokasi', label: 'Pembelian Per Lokasi' },
   ];
 
   const fetchSuppliers = (search) =>
