@@ -3,9 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import MainLayout from './layouts/MainLayout';
 import POSLayout from './layouts/POSLayout';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Pos from './pages/pos/PosLayout';
+import Login from './modules/auth/Login';
+import Register from './modules/auth/Register';
+import Pos from './modules/pos/PosLayout';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
 function FlyonUIInit({ children }) {
