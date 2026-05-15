@@ -8,7 +8,7 @@ import { Store, Key, Image, Save, RefreshCw } from 'lucide-react';
 export default function Setting() {
   const user                    = useAuthStore((s) => s.user);
   const updateUser              = useAuthStore((s) => s.updateUser);
-  const [toko, setToko]         = useState({ namatenant: '', alamat: '', hp: '', email: '', ppn: 11, cekminus: false });
+  const [toko, setToko]         = useState({ namatenant: '', alamat: '', hp: '', email: '', ppn: 11, cekminus: false, pakaibahanbaku: true });
   const [password, setPassword] = useState({ oldPass: '', newPass: '' });
   const [logo, setLogo] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,6 +26,7 @@ export default function Setting() {
           email: data.email || '',
           ppn: data.ppn ?? 11,
           cekminus: data.cekminus === 'YA',
+          pakaibahanbaku: data.pakaibahanbaku !== 'TIDAK',
         });
       })
       .catch(() => {});
@@ -42,6 +43,7 @@ export default function Setting() {
           email: data.email || '',
           ppn: data.ppn ?? 11,
           cekminus: data.cekminus === 'YA',
+          pakaibahanbaku: data.pakaibahanbaku !== 'TIDAK',
         });
       })
       .finally(() => setRefreshing(false));
@@ -49,7 +51,11 @@ export default function Setting() {
 
   const saveToko = async () => {
     try {
-      const payload = { ...toko, cekminus: toko.cekminus ? 'YA' : 'TIDAK' };
+      const payload = {
+        ...toko,
+        cekminus: toko.cekminus ? 'YA' : 'TIDAK',
+        pakaibahanbaku: toko.pakaibahanbaku ? 'YA' : 'TIDAK',
+      };
       await api.put('/setting/toko', payload);
       updateUser({ ...user, ...toko });
       toast.success('Info toko disimpan');
@@ -152,6 +158,20 @@ export default function Setting() {
                 />
                 Cek Minus
               </label>
+            </div>
+            <div className="rounded-xl border border-primary-100 bg-warm-50/40 px-3 py-2.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-dark-400">
+                <input
+                  type="checkbox"
+                  checked={toko.pakaibahanbaku}
+                  onChange={(e) => setToko({...toko, pakaibahanbaku: e.target.checked})}
+                  className="w-4 h-4 accent-primary-500 cursor-pointer"
+                />
+                Pakai Bahan Baku
+              </label>
+              <p className="mt-1 text-[11px] text-dark-300">
+                Jika tidak aktif, master barang otomatis memakai jenis BARANG JADI.
+              </p>
             </div>
             <button onClick={saveToko}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all">

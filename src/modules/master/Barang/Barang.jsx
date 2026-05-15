@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import api from '../../../api/axios';
 import { formatRupiah } from '../../../lib/utils';
 import toast from 'react-hot-toast';
@@ -46,6 +46,8 @@ export default function Barang({ isActive, tabState, updateTabState }) {
   const [showHistory, setShowHistory]           = useState(null);
   const [refreshing, setRefreshing]             = useState(false);
   const [showTemplateInfo, setShowTemplateInfo] = useState(false);
+  const [showJenisColumn, setShowJenisColumn]   = useState(true);
+  const [selectedId, setSelectedId]             = useState(null);
 
   const openTab = useTabStore((s) => s.openTab);
   const confirm = useConfirm();
@@ -55,6 +57,11 @@ export default function Barang({ isActive, tabState, updateTabState }) {
     api.get('/barang', { params }).then((r) => setBarang(r.data));
   };
   useEffect(() => { load(); api.get('/barang/check-price').then((r) => setWarnings(r.data.warnings)); }, [search]);
+  useEffect(() => {
+    api.get('/setting/toko')
+      .then(({ data }) => setShowJenisColumn(data.pakaibahanbaku !== 'YA'))
+      .catch(() => setShowJenisColumn(true));
+  }, []);
 
   const { page, setPage, totalPages, paginatedItems, resetPage } = usePagination(barang, 20);
   useEffect(() => { resetPage(); }, [search]);
@@ -87,6 +94,8 @@ export default function Barang({ isActive, tabState, updateTabState }) {
       type     : 'form_edit',
     });
   };
+
+  const handleRowClick = (b) => setSelectedId(b.idbarang === selectedId ? null : b.idbarang);
 
   const handleDelete = async (id) => {
     const confirmed = await confirm({ message: 'Hapus barang ini?' });
@@ -158,12 +167,12 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                 <tr className="border-b border-primary-50 bg-warm-50/50">
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[7%]">Kode</th>
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[18%]">Nama Barang</th>
-                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Sat. Bessr</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Sat. Besar</th>
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Sat. Sedang</th>
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Sat. Kecil</th>
-                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Konversi1</th>
-                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Konversi2</th>
-                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[11%]">Jenis</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Konv. Besar</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Konv. Kecil</th>
+                  {showJenisColumn && <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[11%]">Jenis</th>}
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[9%]">Harga Beli</th>
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[9%]">Harga Jual</th>
                   <th className="text-center px-3 py-3 text-xs font-semibold text-dark-300 w-[5%]">Stok Min</th>
@@ -172,9 +181,22 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                 </tr>
               </thead>
               <tbody>
-                {paginatedItems.map((b) => (
-                  <>
-                  <tr key={b.idbarang} className={`border-b border-primary-50/50 transition-colors text-sm ${b.hargajual_terbaru && b.hargabeli_terbaru && parseFloat(b.hargajual_terbaru) < parseFloat(b.hargabeli_terbaru) ? 'bg-red-100 hover:bg-red-150' : 'hover:bg-warm-50/30'}`}>
+                {paginatedItems.map((b) => {
+                  const isSelected = selectedId === b.idbarang;
+                  const isPriceWarning = b.hargajual_terbaru && b.hargabeli_terbaru && parseFloat(b.hargajual_terbaru) < parseFloat(b.hargabeli_terbaru);
+                  return (
+                  <Fragment key={b.idbarang}>
+                  <tr
+                    onClick={() => handleRowClick(b)}
+                    onDoubleClick={() => handleEdit(b)}
+                    className={`border-b border-primary-50/50 transition-colors text-sm cursor-pointer select-none ${
+                      isSelected
+                        ? 'bg-primary-50 ring-1 ring-inset ring-primary-200'
+                        : isPriceWarning
+                          ? 'bg-red-100 hover:bg-red-150'
+                          : 'hover:bg-warm-50/30'
+                    }`}
+                  >
                     <td className="px-3 py-3 text-xs font-mono text-dark-300">{b.kodebarang}</td>
                     <td className="px-3 py-3 font-medium text-dark-500">{b.namabarang}</td>
                     <td className="px-3 py-3 text-dark-400">{b.satuanbesar || '-'}</td>
@@ -182,7 +204,7 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                     <td className="px-3 py-3 text-dark-400">{b.satuankecil || '-'}</td>
                     <td className="px-3 py-3 text-center text-dark-300">{b.konversi1 || 0}</td>
                     <td className="px-3 py-3 text-center text-dark-300">{b.konversi2 || 0}</td>
-                    <td className="px-3 py-3">
+                    {showJenisColumn && <td className="px-3 py-3">
                       <span className={`inline-block whitespace-nowrap text-[10px] font-semibold px-1.5 py-0.5 rounded-lg ${
                         b.jenis === 'BAHAN BAKU' ? 'bg-amber-50 text-amber-700' :
                         b.jenis === 'BAHAN SETENGAH JADI' ? 'bg-blue-50 text-blue-700' :
@@ -190,7 +212,7 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                       }`}>
                         {b.jenis || '-'}
                       </span>
-                    </td>
+                    </td>}
                     <td className="px-3 py-3 text-right font-mono text-dark-400">{formatRupiah(b.hargabeli_terbaru)}</td>
                     <td className={`px-3 py-3 text-right font-mono font-semibold ${b.hargajual_terbaru && b.hargabeli_terbaru && parseFloat(b.hargajual_terbaru) < parseFloat(b.hargabeli_terbaru) ? 'text-red-500' : 'text-accent-600'}`}>
                       {formatRupiah(b.hargajual_terbaru)}
@@ -203,19 +225,18 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                         {b.status || 'AKTIF'}
                       </span>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => loadHistory(b.idbarang)} className="p-1.5 rounded-lg hover:bg-accent-50 text-dark-300 hover:text-accent-500" title="Lihat history harga">
                           {showHistory === b.idbarang ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
-                        <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500" title="Edit barang"><Pencil className="w-3.5 h-3.5" /></button>
                         <button onClick={() => handleDelete(b.idbarang)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500" title="Hapus barang"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
                   {showHistory === b.idbarang && (
                     <tr key={`h-${b.idbarang}`}>
-                      <td colSpan={12} className="px-4 py-3 bg-warm-50/30">
+                      <td colSpan={showJenisColumn ? 13 : 12} className="px-4 py-3 bg-warm-50/30">
                         <div className="grid grid-cols-2 gap-4 text-xs">
                           <div>
                             <p className="font-semibold text-dark-400 mb-2">History Harga Beli</p>
@@ -247,8 +268,9 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                       </td>
                     </tr>
                   )}
-                  </>
-                ))}
+                  </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -12,8 +12,10 @@ import { getSatuanOptions, getDefaultSatuan, isJmlValid } from '../../../lib/for
 const JENIS_BADGE = {
   'BAHAN BAKU':         'bg-amber-50 text-amber-700 border-amber-200',
   'BAHAN SETENGAH JADI': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  'BAHAN JADI':          'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'BARANG JADI':         'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
+
+const isBarangJadi = (jenis) => jenis === 'BARANG JADI';
 
 function BrowseBarangModal({ onSelect, onClose }) {
   const [barangList, setBarangList] = useState([]);
@@ -155,7 +157,7 @@ export default function ProduksiForm({ onSuccess, tabId, editData }) {
   let totalHasil = 0;
   for (const item of items) {
     const jml = parseFloat(item.jml) || 0;
-    if (item.jenisbarang === 'BAHAN JADI') {
+    if (isBarangJadi(item.jenisbarang)) {
       totalHasil += jml;
     } else {
       totalBahan += jml;
@@ -165,8 +167,8 @@ export default function ProduksiForm({ onSuccess, tabId, editData }) {
   const handleSubmit = async () => {
     if (items.length === 0) return toast.error('Tambahkan barang terlebih dahulu');
 
-    // Validasi minimal ada BAHAN JADI dan BAHAN BAKU/SETENGAH JADI
-    const hasJadi = items.some(i => i.jenisbarang === 'BAHAN JADI');
+    // Validasi minimal ada BARANG JADI dan BAHAN BAKU/SETENGAH JADI
+    const hasJadi = items.some(i => isBarangJadi(i.jenisbarang));
     const hasBaku = items.some(i => i.jenisbarang === 'BAHAN BAKU' || i.jenisbarang === 'BAHAN SETENGAH JADI');
     if (!hasJadi) return toast.error('Minimal harus ada 1 barang jadi sebagai hasil produksi');
     if (!hasBaku) return toast.error('Minimal harus ada 1 bahan baku atau bahan setengah jadi');
