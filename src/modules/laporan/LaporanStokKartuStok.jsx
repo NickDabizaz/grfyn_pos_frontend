@@ -56,6 +56,7 @@ export default function LaporanStokKartuStok() {
   const [showJenisModal, setShowJenisModal] = useState(false);
 
   const token = useAuthStore((s) => s.token);
+  const lokasi = useAuthStore((s) => s.lokasi);
   const openTab = useTabStore((s) => s.openTab);
 
   const fetchBarangs = (search) =>
@@ -66,6 +67,7 @@ export default function LaporanStokKartuStok() {
 
   const handleGenerate = () => {
     const params = { tglwal, tglakhir };
+    if (lokasi?.idlokasi) params.idlokasi = lokasi.idlokasi;
     if (filterBarangs.length) params.idbarang = joinIds(filterBarangs, 'idbarang');
     if (filterJenis.length) params.jenistransaksi = filterJenis.map(j => j.id).join(',');
     

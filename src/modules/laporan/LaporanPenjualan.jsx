@@ -57,6 +57,7 @@ export default function LaporanPenjualan() {
   const [showLokasiModal, setShowLokasiModal] = useState(false);
 
   const token = useAuthStore((s) => s.token);
+  const lokasi = useAuthStore((s) => s.lokasi);
   const openTab = useTabStore((s) => s.openTab);
 
   const reports = [
@@ -74,6 +75,7 @@ export default function LaporanPenjualan() {
 
   const handleGenerate = () => {
     const params = { tglwal, tglakhir };
+    if (lokasi?.idlokasi) params.idlokasi = lokasi.idlokasi;
     if (filterCustomers.length) params.kodecustomer = joinIds(filterCustomers, 'kodecustomer');
     if (filterLokasis.length) params.namalokasi = joinIds(filterLokasis, 'namalokasi');
     const label = reports.find((r) => r.key === tab)?.label || 'Laporan Penjualan';

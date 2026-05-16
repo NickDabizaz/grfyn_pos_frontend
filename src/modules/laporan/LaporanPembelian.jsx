@@ -55,6 +55,7 @@ export default function LaporanPembelian() {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
 
   const token = useAuthStore((s) => s.token);
+  const lokasi = useAuthStore((s) => s.lokasi);
   const openTab = useTabStore((s) => s.openTab);
 
   const reports = [
@@ -69,6 +70,7 @@ export default function LaporanPembelian() {
 
   const handleGenerate = () => {
     const params = { tglwal, tglakhir };
+    if (lokasi?.idlokasi) params.idlokasi = lokasi.idlokasi;
     if (filterSuppliers.length) params.idsupplier = joinIds(filterSuppliers, 'idsupplier');
     const label = reports.find((r) => r.key === tab)?.label || 'Laporan Pembelian';
     

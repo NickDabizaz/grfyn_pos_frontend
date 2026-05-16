@@ -52,6 +52,7 @@ export default function LaporanStokSekarang() {
   const [summary, setSummary] = useState({ totalBarang: 0, totalStok: 0 });
 
   const token = useAuthStore((s) => s.token);
+  const lokasi = useAuthStore((s) => s.lokasi);
   const openTab = useTabStore((s) => s.openTab);
 
   const load = () => {
@@ -74,10 +75,11 @@ export default function LaporanStokSekarang() {
   }, []);
 
   const handleCetak = () => {
+    const params = lokasi?.idlokasi ? { idlokasi: lokasi.idlokasi } : {};
     openTab({
       label: 'Laporan Stok Sekarang',
       component: LaporanResultPage,
-      props: { url: reportUrl(token), label: 'Laporan Stok Sekarang' },
+      props: { url: reportUrl(token, params), label: 'Laporan Stok Sekarang' },
       type: 'report',
       kodemenu: null,
     });
