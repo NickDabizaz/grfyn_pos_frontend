@@ -128,7 +128,7 @@ export default function ReturBeli({ isActive }) {
     e.stopPropagation();
     const confirmed = await confirm({
       title: 'Batalkan Retur',
-      message: 'Batalkan retur ini? Stok akan dikembalikan seperti semula.',
+      message: 'Batalkan retur DRAFT ini?',
       confirmText: 'Batalkan',
       cancelText: 'Batal',
       variant: 'danger',
@@ -148,7 +148,7 @@ export default function ReturBeli({ isActive }) {
     e.stopPropagation();
     const confirmed = await confirm({
       title: 'Batal Approve Retur Pembelian',
-      message: 'Kembalikan Retur Pembelian ini ke DRAFT? Stok dan kartu hutang retur akan dibalik.',
+      message: 'Kembalikan Retur Pembelian ini ke DRAFT? Kartu stok dan kartu hutang retur akan dihapus.',
       confirmText: 'Batal Approve',
       cancelText: 'Tutup',
       variant: 'danger',
@@ -262,7 +262,7 @@ export default function ReturBeli({ isActive }) {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode Beli</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-dark-300">Total</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Status</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-20">Aksi</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-32">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -307,7 +307,7 @@ export default function ReturBeli({ isActive }) {
                               <XCircle className="w-3 h-3" /> Batal Approve
                             </button>
                           )}
-                          {r.status !== 'CANCELLED' && (
+                          {r.status === 'DRAFT' && (
                             <button
                               onClick={(e) => handleCancel(e, r.idreturbeli)}
                               className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors">

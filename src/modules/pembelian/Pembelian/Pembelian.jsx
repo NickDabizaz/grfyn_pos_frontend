@@ -3,7 +3,7 @@ import api from '../../../api/axios';
 import { useAuthStore } from '../../../store/authStore';
 import { formatRupiah, today } from '../../../lib/utils';
 import toast from 'react-hot-toast';
-import { Plus, Search, RefreshCw, Printer, Pencil } from 'lucide-react';
+import { Plus, Search, RefreshCw, Printer, Pencil, XCircle } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
@@ -157,17 +157,9 @@ export default function Pembelian({ isActive }) {
 
   const handleCancel = async (e, id) => {
     e.stopPropagation();
-    try {
-      const { data: check } = await api.get(`/beli/${id}/check-edit`);
-      if (!check.canEdit) {
-        if (check.reason === 'HUTANG_LUNAS') {
-          return toast.error(check.message || 'Hapus pelunasan hutang terlebih dahulu');
-        }
-      }
-    } catch {}
     const confirmed = await confirm({
       title: 'Batalkan Pembelian',
-      message: 'Batalkan pembelian ini? Stok akan dikembalikan.',
+      message: 'Batalkan pembelian DRAFT ini?',
       confirmText: 'Batalkan',
       cancelText: 'Batal',
       variant: 'danger',
@@ -180,6 +172,31 @@ export default function Pembelian({ isActive }) {
       loadBeli();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal');
+    }
+  };
+
+  const handleUnapprove = async (e, id) => {
+    e.stopPropagation();
+    try {
+      const { data: check } = await api.get(`/beli/${id}/check-edit`);
+      if (!check.canEdit) {
+        return toast.error(check.message || 'Hapus pelunasan hutang terlebih dahulu');
+      }
+    } catch {}
+    const confirmed = await confirm({
+      title: 'Batal Approve Pembelian',
+      message: 'Batal approve akan menghapus kartu stok pembelian dan mengembalikan transaksi ke DRAFT.',
+      confirmText: 'Batal Approve',
+      cancelText: 'Tutup',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      await api.put(`/beli/${id}/unapprove`);
+      toast.success('Approve pembelian dibatalkan');
+      loadBeli();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal batal approve');
     }
   };
 
@@ -317,7 +334,7 @@ export default function Pembelian({ isActive }) {
                   <th className="text-right px-4 py-3 text-xs font-semibold text-dark-300">Total</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Jenis</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300">Status</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-20">Aksi</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-32">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -357,7 +374,14 @@ export default function Pembelian({ isActive }) {
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {b.status !== 'CANCELLED' && (
+                        {b.status === 'APPROVED' && (
+                          <button
+                            onClick={(e) => handleUnapprove(e, b.idbeli)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors">
+                            <XCircle className="w-3 h-3" /> Batal Approve
+                          </button>
+                        )}
+                        {b.status === 'DRAFT' && (
                           <button
                             onClick={(e) => handleCancel(e, b.idbeli)}
                             className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors">

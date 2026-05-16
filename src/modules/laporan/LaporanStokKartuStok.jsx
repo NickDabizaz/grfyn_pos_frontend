@@ -62,12 +62,12 @@ export default function LaporanStokKartuStok() {
     api.get('/barang/browse-barang', search ? { params: { search } } : {}).then((r) => r.data || []);
 
   const fetchJenis = () =>
-    api.get('/laporan/jenisref-kartustok').then((r) => (r.data || []).map(j => ({ id: j, nama: j })));
+    api.get('/laporan/jenistransaksi-kartustok').then((r) => (r.data || []).map(j => ({ id: j, nama: j })));
 
   const handleGenerate = () => {
     const params = { tglwal, tglakhir };
     if (filterBarangs.length) params.idbarang = joinIds(filterBarangs, 'idbarang');
-    if (filterJenis.length) params.jenisref = filterJenis.map(j => j.id).join(',');
+    if (filterJenis.length) params.jenistransaksi = filterJenis.map(j => j.id).join(',');
     
     openTab({
       label: 'Laporan Kartu Stok',
