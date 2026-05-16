@@ -2,13 +2,12 @@ import { lazy } from 'react';
 import {
   LayoutDashboard, ShoppingCart, Package, ShoppingBag, Warehouse,
   ReceiptText, Coins, FileBarChart, Settings, UserCog, MapPin,
-  ClipboardList, Calculator, Undo2, Repeat, Wallet, Factory,
+  ClipboardList, Calculator, Undo2, Wallet, Factory,
 } from 'lucide-react';
 
 // ── Lazy-loaded page components ───────────────────────────────────────────────
 // Each component is only bundled/loaded when its tab is first opened.
 const Dashboard          = lazy(() => import('../modules/dashboard/Dashboard'));
-const PosLayout          = lazy(() => import('../modules/pos/PosLayout'));
 const Barang             = lazy(() => import('../modules/master/Barang/Barang'));
 const Supplier           = lazy(() => import('../modules/master/Supplier/Supplier'));
 const Customer           = lazy(() => import('../modules/master/Customer/Customer'));
@@ -20,8 +19,9 @@ const PurchaseOrder      = lazy(() => import('../modules/pembelian/PurchaseOrder
 const BPB                = lazy(() => import('../modules/pembelian/BPB/BPB'));
 const Penjualan          = lazy(() => import('../modules/penjualan/Penjualan/Penjualan'));
 const ReturJual          = lazy(() => import('../modules/penjualan/ReturJual/ReturJual'));
+const SalesOrder         = lazy(() => import('../modules/penjualan/SalesOrder/SalesOrder'));
+const BPK                = lazy(() => import('../modules/penjualan/BPK/BPK'));
 const ReturBeli          = lazy(() => import('../modules/pembelian/ReturBeli/ReturBeli'));
-const TukarBarang        = lazy(() => import('../modules/penjualan/TukarBarang/TukarBarang'));
 const Kas                = lazy(() => import('../modules/keuangan/Kas/Kas'));
 const SaldoAwalStok      = lazy(() => import('../modules/stok/SaldoAwalStok/SaldoAwalStok'));
 const PenyesuaianStok    = lazy(() => import('../modules/stok/PenyesuaianStok/PenyesuaianStok'));
@@ -31,6 +31,7 @@ const StockOpname        = lazy(() => import('../modules/stok/StockOpname/StockO
 const PelunasanPiutang   = lazy(() => import('../modules/keuangan/PelunasanPiutang/PelunasanPiutang'));
 const PelunasanHutang    = lazy(() => import('../modules/keuangan/PelunasanHutang/PelunasanHutang'));
 const Produksi           = lazy(() => import('../modules/stok/Produksi/Produksi'));
+const Setting            = lazy(() => import('../modules/pos/Setting/Setting'));
 const Karyawan           = lazy(() => import('../modules/hr/Karyawan/Karyawan'));
 const Absensi            = lazy(() => import('../modules/hr/Absensi/Absensi'));
 const Payroll            = lazy(() => import('../modules/hr/Payroll/Payroll'));
@@ -39,7 +40,6 @@ const LaporanPembelian   = lazy(() => import('../modules/laporan/LaporanPembelia
 const LaporanBarang      = lazy(() => import('../modules/laporan/LaporanBarang'));
 const LaporanStokSekarang = lazy(() => import('../modules/laporan/LaporanStokSekarang'));
 const LaporanStokKartuStok = lazy(() => import('../modules/laporan/LaporanStokKartuStok'));
-const Setting            = lazy(() => import('../modules/pos/Setting'));
 
 const KartuStokPlaceholder = () => (
   <div className="p-6">
@@ -55,7 +55,6 @@ const registry = {
     icon     : LayoutDashboard,
     closable : false,
   },
-  'pos': { component: PosLayout, label: 'POS', icon: ShoppingCart },
   'master.barang'   : { component: Barang,    label: 'Barang',    icon: Package },
   'master.supplier' : { component: Supplier,  label: 'Supplier' },
   'master.customer' : { component: Customer,  label: 'Customer' },
@@ -68,9 +67,10 @@ const registry = {
   'pembelian.bpb'   : { component: BPB, label: 'Bukti Penerimaan Barang (BPB)', icon: ShoppingBag },
   'pembelian.retur' : { component: ReturBeli, label: 'Retur Pembelian', icon: Undo2 },
   'penjualan'       : { component: Penjualan, label: 'Penjualan', icon: ReceiptText },
+  'penjualan.so'         : { component: SalesOrder, label: 'Sales Order (SO)',              icon: ReceiptText },
+  'penjualan.bpk'        : { component: BPK,        label: 'Bukti Pengeluaran Barang (BPK)', icon: ReceiptText },
   'penjualan.transaksi'  : { component: Penjualan,  label: 'Transaksi Jual',   icon: ReceiptText },
   'penjualan.retur'      : { component: ReturJual,  label: 'Retur Penjualan',  icon: Undo2 },
-  'penjualan.tukarbarang': { component: TukarBarang, label: 'Tukar Barang',    icon: Repeat },
   'stok.saldoawal'   : { component: SaldoAwalStok,   label: 'Saldo Awal Stok' },
   'stok.penyesuaian' : { component: PenyesuaianStok, label: 'Penyesuaian Stok' },
   'stok.hitunghpp'   : { component: HitungHPP,       label: 'Hitung HPP',   icon: Calculator },
@@ -92,11 +92,11 @@ const registry = {
   'laporan.neraca'      : { component: LaporanPenjualan,    label: 'Neraca' },
   'laporan.bukubesar'   : { component: LaporanPenjualan,    label: 'Buku Besar' },
   'laporan.closing'     : { component: LaporanPenjualan,    label: 'Closing Periode' },
+  'setting'             : { component: Setting,  label: 'Setting Perusahaan', icon: Settings },
   'sdm'                 : { component: Karyawan, label: 'HR' },
   'sdm.karyawan'        : { component: Karyawan, label: 'Data Karyawan' },
   'sdm.absensi'         : { component: Absensi, label: 'Absensi' },
   'sdm.payroll'         : { component: Payroll, label: 'Payroll' },
-  'setting'             : { component: Setting, label: 'Setting', icon: Settings },
 };
 
 export function getPage(kodemenu) {

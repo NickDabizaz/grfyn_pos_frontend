@@ -113,7 +113,7 @@ export default function ProduksiForm({ onSuccess, tabId, editData }) {
           konversi2:    item.konversi2    || 0,
           stok:         item.stok         || 0,
           satuan:       item.satuan || getDefaultSatuan(item) || 'PCS',
-          jml:          String(item.jml),
+          jml:          String(parseInt(item.jml, 10) || 0),
         }))
       : []
   );

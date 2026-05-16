@@ -88,7 +88,7 @@ export default function Register() {
             <div className="space-y-4 mt-4 ms-4">
               <div>
                 <label className="block text-xs font-semibold text-dark-400 mb-1">Nama Perusahaan *</label>
-                <input value={form.tenant.namatenant} onChange={e => update('tenant', 'namatenant', e.target.value)}
+                <input value={form.tenant.namatenant.toUpperCase()} onChange={e => update('tenant', 'namatenant', e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-primary-100 bg-warm-50 text-dark-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
                   placeholder="PT. Nama Perusahaan" />
               </div>

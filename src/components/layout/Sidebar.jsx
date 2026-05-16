@@ -9,7 +9,6 @@ import {
 
 const menu = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/pos', label: 'POS', icon: ShoppingCart },
   {
     label: 'Master', icon: Package, children: [
       { to: '/master/barang', label: 'Barang' },

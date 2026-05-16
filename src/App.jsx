@@ -2,10 +2,8 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import MainLayout from './layouts/MainLayout';
-import POSLayout from './layouts/POSLayout';
 import Login from './modules/auth/Login';
 import Register from './modules/auth/Register';
-import Pos from './modules/pos/PosLayout';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
 function FlyonUIInit({ children }) {
@@ -38,10 +36,7 @@ export default function App() {
             {/* Single Page Tab ERP Route */}
             <Route path="/app" element={<MainLayout />} />
             
-            {/* POS Standalone Layout */}
-            <Route element={<POSLayout />}>
-              <Route path="/pos" element={<Pos />} />
-            </Route>
+
 
             <Route path="/" element={<Navigate to="/app" replace />} />
             <Route path="*" element={<Navigate to="/app" replace />} />

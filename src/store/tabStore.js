@@ -27,6 +27,7 @@ const useTabStore = create(
         tabs       : [],
         activeTabId: null,
         showMemoryWarning: false,
+        refreshTokens: {},
 
         openTab: (config) => {
           const id  = ++tabIdCounter;
@@ -89,6 +90,16 @@ const useTabStore = create(
 
         setActiveTab: (id) => set({ activeTabId: id }, false, 'tab/setActiveTab'),
 
+        requestRefresh: (kodemenu) => {
+          if (!kodemenu) return;
+          set(state => ({
+            refreshTokens: {
+              ...state.refreshTokens,
+              [kodemenu]: Date.now(),
+            },
+          }), false, 'tab/requestRefresh');
+        },
+
         updateTabState: (id, partialState) => {
           set(state => ({
             tabs: state.tabs.map(t =>
@@ -128,11 +139,13 @@ const useTabStore = create(
           // Dynamic import avoids circular dependency
           import('../lib/pageRegistry.jsx').then(({ getPage }) => {
             useTabStore.setState(s => ({
-              tabs: s.tabs.map(t => {
-                if (t.component) return t;
-                const page = t.kodemenu ? getPage(t.kodemenu) : null;
-                return page ? { ...t, component: page.component, icon: page.icon || null } : t;
-              }).filter(t => t.component),
+              tabs: s.tabs
+                .filter(t => t.type !== 'report')
+                .map(t => {
+                  if (t.component) return t;
+                  const page = t.kodemenu ? getPage(t.kodemenu) : null;
+                  return page ? { ...t, component: page.component, icon: page.icon || null } : t;
+                }).filter(t => t.component),
             }));
           });
         },

@@ -417,6 +417,195 @@ export function BrowseBeliModal({ onSelect, onClose }) {
   );
 }
 
+export function BrowseSOModal({ onSelect, onClose }) {
+  const [soList, setSoList] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = { available: 1 };
+    if (search) params.search = search;
+    api.get('/sales-order', { params })
+      .then(r => setSoList(r.data))
+      .catch(() => setSoList([]))
+      .finally(() => setLoading(false));
+  }, [search]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-primary-50">
+          <h3 className="text-sm font-bold text-dark-500">Pilih Sales Order</h3>
+        </div>
+        <div className="p-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
+            <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
+              placeholder="Cari SO..." autoFocus
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+          </div>
+          <div className="max-h-72 overflow-y-auto scrollbar-thin">
+            {loading && <p className="text-sm text-dark-300 text-center py-8">Memuat...</p>}
+            {!loading && soList.length === 0 && (
+              <p className="text-sm text-dark-300 text-center py-8">{search ? 'Tidak ada SO ditemukan' : 'Tidak ada SO yang bisa dipilih'}</p>
+            )}
+            {!loading && soList.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-primary-50 bg-warm-50">
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Kode</th>
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Tanggal</th>
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Customer</th>
+                    <th className="text-right px-3 py-2 text-xs text-dark-300 font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {soList.map(so => (
+                    <tr key={so.idso} onClick={() => onSelect(so)}
+                      className="border-b border-primary-50/50 hover:bg-warm-50 cursor-pointer transition-colors">
+                      <td className="px-3 py-2.5 text-xs font-mono text-dark-400">{so.kodeso}</td>
+                      <td className="px-3 py-2.5 text-xs text-dark-400">{String(so.tgltrans || '').slice(0, 10)}</td>
+                      <td className="px-3 py-2.5 text-sm text-dark-500">{so.namacustomer}</td>
+                      <td className="px-3 py-2.5 text-right text-xs font-mono font-semibold text-accent-600">{formatRupiah(so.grandtotal || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BrowseBPKModal({ onSelect, onClose }) {
+  const [bpkList, setBpkList] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = { available: 1 };
+    if (search) params.search = search;
+    api.get('/bpk-jual', { params })
+      .then(r => setBpkList(r.data))
+      .catch(() => setBpkList([]))
+      .finally(() => setLoading(false));
+  }, [search]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-primary-50">
+          <h3 className="text-sm font-bold text-dark-500">Pilih BPK (Bukti Pengeluaran Barang)</h3>
+        </div>
+        <div className="p-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
+            <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
+              placeholder="Cari BPK..." autoFocus
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+          </div>
+          <div className="max-h-72 overflow-y-auto scrollbar-thin">
+            {loading && <p className="text-sm text-dark-300 text-center py-8">Memuat...</p>}
+            {!loading && bpkList.length === 0 && (
+              <p className="text-sm text-dark-300 text-center py-8">{search ? 'Tidak ada BPK ditemukan' : 'Tidak ada BPK yang bisa dipilih'}</p>
+            )}
+            {!loading && bpkList.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-primary-50 bg-warm-50">
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Kode</th>
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Tanggal</th>
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Customer</th>
+                    <th className="text-right px-3 py-2 text-xs text-dark-300 font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bpkList.map(bpk => (
+                    <tr key={bpk.idbpk} onClick={() => onSelect(bpk)}
+                      className="border-b border-primary-50/50 hover:bg-warm-50 cursor-pointer transition-colors">
+                      <td className="px-3 py-2.5 text-xs font-mono text-dark-400">{bpk.kodebpk}</td>
+                      <td className="px-3 py-2.5 text-xs text-dark-400">{String(bpk.tgltrans || '').slice(0, 10)}</td>
+                      <td className="px-3 py-2.5 text-sm text-dark-500">{bpk.namacustomer}</td>
+                      <td className="px-3 py-2.5 text-right text-xs font-mono font-semibold text-accent-600">{formatRupiah(bpk.grandtotal || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BrowseJualModal({ onSelect, onClose }) {
+  const [jualList, setJualList] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = { available: 1 };
+    if (search) params.search = search;
+    api.get('/jual', { params })
+      .then(r => setJualList(r.data))
+      .catch(() => setJualList([]))
+      .finally(() => setLoading(false));
+  }, [search]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-primary-50">
+          <h3 className="text-sm font-bold text-dark-500">Pilih Penjualan</h3>
+        </div>
+        <div className="p-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-300" />
+            <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
+              placeholder="Cari penjualan..." autoFocus
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-primary-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+          </div>
+          <div className="max-h-72 overflow-y-auto scrollbar-thin">
+            {loading && <p className="text-sm text-dark-300 text-center py-8">Memuat...</p>}
+            {!loading && jualList.length === 0 && (
+              <p className="text-sm text-dark-300 text-center py-8">{search ? 'Tidak ada penjualan ditemukan' : 'Tidak ada penjualan yang bisa dipilih'}</p>
+            )}
+            {!loading && jualList.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-primary-50 bg-warm-50">
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Kode</th>
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Tanggal</th>
+                    <th className="text-left px-3 py-2 text-xs text-dark-300 font-semibold">Customer</th>
+                    <th className="text-right px-3 py-2 text-xs text-dark-300 font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jualList.map(jual => (
+                    <tr key={jual.idjual} onClick={() => onSelect(jual)}
+                      className="border-b border-primary-50/50 hover:bg-warm-50 cursor-pointer transition-colors">
+                      <td className="px-3 py-2.5 text-xs font-mono text-dark-400">{jual.kodejual}</td>
+                      <td className="px-3 py-2.5 text-xs text-dark-400">{String(jual.tgltrans || '').slice(0, 10)}</td>
+                      <td className="px-3 py-2.5 text-sm text-dark-500">{jual.namacustomer}</td>
+                      <td className="px-3 py-2.5 text-right text-xs font-mono font-semibold text-accent-600">{formatRupiah(jual.grandtotal || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────── PPN Dropdown ───────────────
 
 export function PpnDropdown({ value, onChange }) {
@@ -498,8 +687,8 @@ export function getDefaultSatuan(b) {
 }
 
 export function isJmlValid(val) {
-  const s = String(val).trim();
-  return s !== '' && /^\d+$/.test(s) && parseInt(s, 10) > 0;
+  const n = parseFloat(String(val).trim());
+  return !isNaN(n) && n > 0;
 }
 
 export function isFloatValid(val) {

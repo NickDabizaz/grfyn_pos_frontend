@@ -96,6 +96,13 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const lokasiRaw = localStorage.getItem('grfyn_lokasi');
+  if (lokasiRaw) {
+    try {
+      const lokasi = JSON.parse(lokasiRaw);
+      if (lokasi?.idlokasi) config.headers['X-Lokasi-Id'] = lokasi.idlokasi;
+    } catch {}
+  }
   return config;
 });
 
