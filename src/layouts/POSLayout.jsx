@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
-import api from "../api/axios";
+import api, { clearProactiveRefresh } from "../api/axios";
 import { Store, LogOut, ArrowLeft } from "lucide-react";
 
 export default function POSLayout() {
@@ -15,12 +15,14 @@ export default function POSLayout() {
     }
     api.get("/auth/me").catch(() => {
       logout();
+      clearProactiveRefresh();
       navigate("/login");
     });
-  }, []);
+  }, [token, logout, navigate]);
 
   const handleLogout = () => {
     logout();
+    clearProactiveRefresh();
     navigate("/login");
   };
 

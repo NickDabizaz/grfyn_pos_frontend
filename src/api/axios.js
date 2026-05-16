@@ -14,10 +14,32 @@ const drainQueue = (token) => {
   pendingQueue = [];
 };
 
+const rejectQueue = (err) => {
+  pendingQueue.forEach(prom => prom.reject(err));
+  pendingQueue = [];
+};
+
 export const clearProactiveRefresh = () => {
   if (proactiveRefreshTimer) {
     clearInterval(proactiveRefreshTimer);
     proactiveRefreshTimer = null;
+  }
+};
+
+const logoutExpiredSession = async () => {
+  clearProactiveRefresh();
+  rejectQueue(new Error('Session expired'));
+
+  const [{ useAuthStore }, { useAuthModalStore }] = await Promise.all([
+    import('../store/authStore.js'),
+    import('../store/authModalStore.js'),
+  ]);
+
+  useAuthModalStore.getState().hide();
+  useAuthStore.getState().logout();
+
+  if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+    window.location.replace('/login');
   }
 };
 
@@ -98,7 +120,7 @@ api.interceptors.response.use(
         }).catch(() => Promise.reject(err));
       }
 
-      // Jika ada token, coba refresh dulu sebelum show overlay
+      // Jika ada token, coba refresh dulu sebelum logout
       if (token) {
         isRefreshing = true;
         try {
@@ -119,27 +141,15 @@ api.interceptors.response.use(
 
           originalConfig.headers.Authorization = `Bearer ${data.token}`;
           return api.request(originalConfig);
-        } catch (refreshErr) {
+        } catch {
           isRefreshing = false;
-          localStorage.removeItem('grfyn_token');
-          localStorage.removeItem('grfyn_user');
-          pendingQueue.forEach(prom => prom.reject(refreshErr));
-          pendingQueue = [];
-          clearProactiveRefresh();
-
-          import('../store/authModalStore.js').then(({ useAuthModalStore }) => {
-            useAuthModalStore.getState().show();
-          });
+          await logoutExpiredSession();
           return Promise.reject(err);
         }
       }
 
-      // Tidak ada token, langsung show overlay
-      localStorage.removeItem('grfyn_token');
-      localStorage.removeItem('grfyn_user');
-      import('../store/authModalStore.js').then(({ useAuthModalStore }) => {
-        useAuthModalStore.getState().show();
-      });
+      // Tidak ada token, langsung logout ke halaman login.
+      await logoutExpiredSession();
     }
     return Promise.reject(err);
   }

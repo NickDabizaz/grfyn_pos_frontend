@@ -6,7 +6,6 @@ import TabContent from './TabContent';
 import useTabStore from '../store/tabStore';
 import { useAuthStore } from '../store/authStore';
 import { openPageFromSidebar, DASHBOARD_KODE } from '../lib/pageRegistry.jsx';
-import LoginOverlay from '../components/ui/LoginOverlay';
 import api, { clearProactiveRefresh } from '../api/axios';
 
 let dashboardOpened = false;
@@ -24,11 +23,11 @@ export default function MainLayout() {
       return;
     }
     // Cek token valid; jika gagal biarkan axios interceptor yang
-    // menangani (refresh token atau tampilkan LoginOverlay).
+    // menangani refresh token atau logout.
     api.get('/auth/me').catch(() => {
       // Tidak perlu redirect manual — interceptor sudah handle.
     });
-  }, []);
+  }, [token, navigate]);
 
   useEffect(() => {
     if (token && !dashboardOpened) {
@@ -56,7 +55,6 @@ export default function MainLayout() {
           <TabContent />
         </div>
       </div>
-      <LoginOverlay />
     </>
   );
 }

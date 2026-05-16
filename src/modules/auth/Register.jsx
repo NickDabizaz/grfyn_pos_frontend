@@ -80,6 +80,9 @@ export default function Register() {
               </div>
             ))}
           </div>
+          <p className="text-[11px] text-dark-300 -mt-5 mb-6 text-center">
+            <span className="font-semibold text-primary-600">*</span> wajib diisi
+          </p>
 
           {step === 0 && (
             <div className="space-y-4 mt-4 ms-4">
