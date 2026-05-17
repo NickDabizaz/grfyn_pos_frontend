@@ -7,6 +7,7 @@ import { Plus, RefreshCw } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import PelunasanHutangForm from './PelunasanHutangForm';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/l10n/id.js';
@@ -20,6 +21,10 @@ export default function PelunasanHutang({ isActive }) {
   const [tglAwal, setTglAwal] = useState(today());
   const [tglAkhir, setTglAkhir] = useState(today());
   const [showDeleteModal, setShowDeleteModal] = useState(null);
+
+  const { access } = useMenuAccess('keuangan.pelunasanhutang');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -62,10 +67,12 @@ export default function PelunasanHutang({ isActive }) {
           <p className="text-sm text-dark-300">Kelola pelunasan hutang ke supplier</p>
         </div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
             <Plus className="w-4 h-4" /> Pelunasan Baru
           </button>
+          )}
           <button onClick={loadData} className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400 hover:bg-warm-50">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -125,10 +132,12 @@ export default function PelunasanHutang({ isActive }) {
                       <span className="badge badge-sm badge-primary">{ph.metodbayar}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
+                      {canTambah && (
                       <button onClick={() => setShowDeleteModal(ph)}
                         className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
                         Hapus
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}

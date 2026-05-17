@@ -7,6 +7,7 @@ import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
 import HitungHPPForm from './HitungHPPForm';
 import HitungHPPDetail from './HitungHPPDetail';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 
 const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -23,6 +24,9 @@ export default function HitungHPP({ isActive }) {
   const [tahun, setTahun] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
+  const { access } = useMenuAccess('stok.hitunghpp');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => {
     const params = {};
@@ -81,9 +85,9 @@ export default function HitungHPP({ isActive }) {
           <p className="text-sm text-dark-300">Perhitungan Harga Pokok Penjualan per periode</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold">
+          {canTambah && <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold">
             <Plus className="w-4 h-4" /> Hitung Periode Baru
-          </button>
+          </button>}
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400">
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>

@@ -5,6 +5,7 @@ import { Plus, Search, RefreshCw } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import SaldoAwalStokForm from './SaldoAwalStokForm';
 
 export default function SaldoAwalStok({ isActive }) {
@@ -12,6 +13,9 @@ export default function SaldoAwalStok({ isActive }) {
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
+  const { access } = useMenuAccess('stok.saldoawal');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => {
     const { data: res } = await api.get('/stok/saldostok');
@@ -30,7 +34,7 @@ export default function SaldoAwalStok({ isActive }) {
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div><h2 className="text-xl font-bold text-dark-500">Saldo Awal Stok</h2><p className="text-sm text-dark-300">Input saldo awal stok per barang</p></div>
         <div className="flex items-center gap-2">
-          <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> Saldo Awal Baru</button>
+          {canTambah && <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> Saldo Awal Baru</button>}
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400"><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
       </div>

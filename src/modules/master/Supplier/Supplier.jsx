@@ -6,6 +6,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import { useConfirm } from '../../../components/ui/ConfirmDialog';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import SupplierForm from './SupplierForm';
 
 const downloadFile = (url, filename) => {
@@ -43,6 +44,9 @@ export default function Supplier({ isActive }) {
   const [showTemplateInfo, setShowTemplateInfo] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
   const confirm = useConfirm();
+  const { access } = useMenuAccess('master.supplier');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => {
     const { data: res } = await api.get('/supplier');
@@ -64,7 +68,9 @@ export default function Supplier({ isActive }) {
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div><h2 className="text-xl font-bold text-dark-500">Supplier</h2><p className="text-sm text-dark-300">Manajemen data supplier</p></div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> Tambah Supplier</button>
+          )}
           <button onClick={() => downloadFile('/impor/supplier/export', 'supplier-export.csv')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary-100 text-xs font-semibold text-dark-400 hover:bg-warm-50"><Download className="w-3.5 h-3.5" /> Export</button>
           <button onClick={() => setShowTemplateInfo(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary-100 text-xs font-semibold text-dark-400 hover:bg-warm-50"><FileText className="w-3.5 h-3.5" /> Unduh Template</button>
           <button onClick={() => handleImport('/impor/supplier/import', load)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary-100 text-xs font-semibold text-dark-400 hover:bg-warm-50"><Upload className="w-3.5 h-3.5" /> Import</button>
@@ -90,8 +96,12 @@ export default function Supplier({ isActive }) {
                   <tr key={s.idsupplier} className="border-b border-primary-50/50 hover:bg-warm-50/30 text-sm">
                     <td className="px-4 py-3 text-xs font-mono text-dark-300">{s.kodesupplier}</td><td className="px-4 py-3 font-medium text-dark-500">{s.namasupplier}</td><td className="px-4 py-3 text-dark-400">{s.alamat || '-'}</td><td className="px-4 py-3 text-dark-400">{s.hp || '-'}</td>
                     <td className="px-4 py-3"><div className="flex items-center justify-center gap-1">
+                      {canUbah && (
                       <button onClick={() => handleEdit(s)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500"><Pencil className="w-3.5 h-3.5" /></button>
+                      )}
+                      {canTambah && (
                       <button onClick={() => handleDelete(s.idsupplier)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      )}
                     </div></td>
                   </tr>
                 ))}

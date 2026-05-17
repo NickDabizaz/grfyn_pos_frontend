@@ -6,9 +6,13 @@ import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
 import KaryawanForm from './KaryawanForm';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 
 export default function Karyawan() {
   const openOrFocusTab = useTabStore(s => s.openOrFocusTab);
+  const { access } = useMenuAccess('sdm.karyawan');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const [list, setList]           = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -62,10 +66,12 @@ export default function Karyawan() {
           <p className="text-sm text-dark-300">Kelola data karyawan perusahaan</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleTambah}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
-            <Plus className="w-4 h-4" /> Karyawan Baru
-          </button>
+          {canTambah && (
+            <button onClick={handleTambah}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
+              <Plus className="w-4 h-4" /> Karyawan Baru
+            </button>
+          )}
           <button onClick={handleRefresh} disabled={refreshing}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400 hover:bg-warm-50">
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -112,12 +118,16 @@ export default function Karyawan() {
                     <td className="px-4 py-3 text-dark-400 text-xs">{k.nohp || '-'}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); handleEdit(k); }} className="text-primary-600 hover:text-primary-700 p-1 rounded hover:bg-primary-50">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleHapus(k.idkaryawan, k.namakaryawan); }} className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {canUbah && (
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(k); }} className="text-primary-600 hover:text-primary-700 p-1 rounded hover:bg-primary-50">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canTambah && (
+                          <button onClick={(e) => { e.stopPropagation(); handleHapus(k.idkaryawan, k.namakaryawan); }} className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -8,6 +8,7 @@ import Pagination from '../../../components/ui/Pagination';
 import { useConfirm } from '../../../components/ui/ConfirmDialog';
 import useTabStore from '../../../store/tabStore';
 import BarangForm from './BarangForm';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 
 const downloadFile = (url, filename) => {
   api.get(url, { responseType: 'blob' }).then((r) => {
@@ -51,6 +52,9 @@ export default function Barang({ isActive, tabState, updateTabState }) {
 
   const openTab = useTabStore((s) => s.openTab);
   const confirm = useConfirm();
+  const { access } = useMenuAccess('master.barang');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah   = canAccess(access, 'ubah');
 
   const load = () => {
     const params = search ? { search } : {};
@@ -123,10 +127,12 @@ export default function Barang({ isActive, tabState, updateTabState }) {
           <p className="text-sm text-dark-300">Manajemen produk dan harga</p>
         </div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all hover:shadow-lg hover:shadow-primary-500/20 active:scale-[0.98]">
             <Plus className="w-4 h-4" /> Tambah Barang
           </button>
+          )}
           <button onClick={() => downloadFile('/impor/barang/export', 'barang-export.csv')}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary-100 text-xs font-semibold text-dark-400 hover:bg-warm-50 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
@@ -188,7 +194,7 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                   <Fragment key={b.idbarang}>
                   <tr
                     onClick={() => handleRowClick(b)}
-                    onDoubleClick={() => handleEdit(b)}
+                    onDoubleClick={() => canUbah && handleEdit(b)}
                     className={`border-b border-primary-50/50 transition-colors text-sm cursor-pointer select-none ${
                       isSelected
                         ? 'bg-primary-50 ring-1 ring-inset ring-primary-200'
@@ -230,7 +236,12 @@ export default function Barang({ isActive, tabState, updateTabState }) {
                         <button onClick={() => loadHistory(b.idbarang)} className="p-1.5 rounded-lg hover:bg-accent-50 text-dark-300 hover:text-accent-500" title="Lihat history harga">
                           {showHistory === b.idbarang ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
+                        {canUbah && (
+                        <button onClick={() => handleEdit(b)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500" title="Edit barang"><Pencil className="w-3.5 h-3.5" /></button>
+                        )}
+                        {canTambah && (
                         <button onClick={() => handleDelete(b.idbarang)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500" title="Hapus barang"><Trash2 className="w-3.5 h-3.5" /></button>
+                        )}
                       </div>
                     </td>
                   </tr>

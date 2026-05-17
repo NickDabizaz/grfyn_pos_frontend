@@ -4,6 +4,7 @@ import { Plus, Search, RefreshCw, Edit2 } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import LokasiForm from './LokasiForm';
 import api from '../../../api/axios';
 
@@ -12,6 +13,9 @@ export default function Lokasi({ isActive }) {
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
+  const { access } = useMenuAccess('master.lokasi');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => {
     const { data: res } = await api.get('/lokasi');
@@ -37,7 +41,9 @@ export default function Lokasi({ isActive }) {
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div><h2 className="text-xl font-bold text-dark-500">Lokasi</h2><p className="text-sm text-dark-300">Kelola data lokasi / cabang</p></div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> Lokasi Baru</button>
+          )}
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400"><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
       </div>
@@ -68,8 +74,10 @@ export default function Lokasi({ isActive }) {
                   <td className="px-4 py-3 text-dark-400">{lokasi.hp || '-'}</td>
                   <td className="px-4 py-3 text-center">{lokasi.isdefault ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-primary-50 text-primary-600">Default</span> : '-'}</td>
                   <td className="px-4 py-3 text-center"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${lokasi.status === 'AKTIF' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>{lokasi.status}</span></td>
-                  <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center">
+                    {canUbah && (
                     <button onClick={() => handleEdit(lokasi)} className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                    )}
                   </td>
                 </tr>
               ))}

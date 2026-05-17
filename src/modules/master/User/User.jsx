@@ -4,6 +4,7 @@ import { Plus, Search, RefreshCw, Edit2 } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import UserForm from './UserForm';
 
 export default function User({ isActive }) {
@@ -12,6 +13,9 @@ export default function User({ isActive }) {
   const [selectedId, setSelectedId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
+  const { access } = useMenuAccess('master.user');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => {
     const { data: res } = await api.get('/user');
@@ -41,7 +45,9 @@ export default function User({ isActive }) {
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div><h2 className="text-xl font-bold text-dark-500">User</h2><p className="text-sm text-dark-300">Kelola pengguna & akses menu</p></div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> User Baru</button>
+          )}
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400"><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
       </div>
@@ -68,7 +74,7 @@ export default function User({ isActive }) {
                 <tr
                   key={user.iduser}
                   onClick={() => setSelectedId(user.iduser)}
-                  onDoubleClick={() => handleEdit(user)}
+                  onDoubleClick={() => canUbah && handleEdit(user)}
                   className={`border-b border-primary-50/50 text-sm cursor-pointer select-none transition-colors ${
                     isSelected ? 'bg-primary-100 text-dark-700 ring-1 ring-inset ring-primary-300' : 'hover:bg-warm-50/30'
                   }`}

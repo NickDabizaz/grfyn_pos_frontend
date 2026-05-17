@@ -81,7 +81,13 @@ export default function UserForm({ id, user: existingUser, onSuccess, tabId }) {
     setMenuAccess(prev => {
       const next = { ...prev };
       ids.forEach((idmenu) => {
-        next[idmenu] = checked ? fullAccess() : emptyAccess();
+        if (checked) {
+          const current = normalizeAccess(next[idmenu]);
+          const anySet = hasAnyAccess(current);
+          next[idmenu] = anySet ? { ...current, hakakses: 1 } : { ...emptyAccess(), hakakses: 1 };
+        } else {
+          next[idmenu] = emptyAccess();
+        }
       });
       return next;
     });

@@ -3,6 +3,7 @@ import api from '../../../api/axios';
 import toast from 'react-hot-toast';
 import { Save, Upload } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 
 const UPPERCASE_FIELDS = new Set(['namatenant', 'alamat']);
 
@@ -11,6 +12,10 @@ function normalizeUpper(value) {
 }
 
 export default function Setting() {
+  const { access } = useMenuAccess('pos');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
+
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const [form, setForm] = useState({
@@ -93,10 +98,12 @@ export default function Setting() {
           <h2 className="text-xl font-bold text-dark-500">Setting Perusahaan</h2>
           <p className="text-sm text-dark-300">Konfigurasi data toko dan preferensi sistem</p>
         </div>
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold disabled:opacity-60">
-          <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan'}
-        </button>
+        {canUbah && (
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold disabled:opacity-60">
+            <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto px-6 pb-6">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { today, firstOfMonth } from '../../lib/utils';
 import { useAuthStore } from '../../store/authStore';
 import useTabStore from '../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../hooks/useMenuAccess';
 import { Eye, FileBarChart, X } from 'lucide-react';
 import api from '../../api/axios';
 import MultiSelectModal from '../../components/ui/MultiSelectModal';
@@ -48,6 +49,10 @@ function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
 }
 
 export default function LaporanPenjualan() {
+  const { access } = useMenuAccess('laporan.penjualan');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
+
   const [tab, setTab] = useState('sales-transaksi');
   const [tglwal, setTglwal] = useState(firstOfMonth());
   const [tglakhir, setTglakhir] = useState(today());

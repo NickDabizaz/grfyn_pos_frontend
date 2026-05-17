@@ -6,6 +6,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import { useConfirm } from '../../../components/ui/ConfirmDialog';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import AkunForm from './AkunForm';
 
 export default function Akun({ isActive }) {
@@ -14,6 +15,9 @@ export default function Akun({ isActive }) {
   const [refreshing, setRefreshing] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
   const confirm = useConfirm();
+  const { access } = useMenuAccess('master.akun');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => { const { data: res } = await api.get('/akun'); setData(res); }, []);
   const filteredData = search ? data.filter(a => a.namaakun.toLowerCase().includes(search.toLowerCase()) || a.kodeakun.toLowerCase().includes(search.toLowerCase())) : data;
@@ -31,7 +35,9 @@ export default function Akun({ isActive }) {
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <div><h2 className="text-xl font-bold text-dark-500">Akun</h2><p className="text-sm text-dark-300">Daftar akun / chart of accounts</p></div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> Tambah Akun</button>
+          )}
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400"><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
       </div>
@@ -60,8 +66,12 @@ export default function Akun({ isActive }) {
                     </td>
                     <td className="px-4 py-3 text-dark-400 text-xs">{a.status || '-'}</td>
                     <td className="px-4 py-3"><div className="flex items-center justify-center gap-1">
+                      {canUbah && (
                       <button onClick={() => handleEdit(a)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500"><Pencil className="w-3.5 h-3.5" /></button>
+                      )}
+                      {canTambah && (
                       <button onClick={() => handleDelete(a.idakun)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      )}
                     </div></td>
                   </tr>
                 ))}

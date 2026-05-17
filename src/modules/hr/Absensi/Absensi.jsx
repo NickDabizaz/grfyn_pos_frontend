@@ -9,9 +9,13 @@ import useTabStore from '../../../store/tabStore';
 import AbsensiForm from './AbsensiForm';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/l10n/id.js';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 
 export default function Absensi() {
   const openOrFocusTab = useTabStore(s => s.openOrFocusTab);
+  const { access } = useMenuAccess('sdm.absensi');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const [list, setList]           = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -45,10 +49,12 @@ export default function Absensi() {
           <p className="text-sm text-dark-300">Catat dan kelola absensi karyawan</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleTambah}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
-            <Plus className="w-4 h-4" /> Absensi Baru
-          </button>
+          {canTambah && (
+            <button onClick={handleTambah}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
+              <Plus className="w-4 h-4" /> Absensi Baru
+            </button>
+          )}
           <button onClick={handleRefresh} disabled={refreshing}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400 hover:bg-warm-50">
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />

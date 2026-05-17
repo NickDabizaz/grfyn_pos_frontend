@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { useAuthStore } from '../../store/authStore';
 import useTabStore from '../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../hooks/useMenuAccess';
 import { Printer, Package, RefreshCw, X } from 'lucide-react';
 import MultiSelectModal from '../../components/ui/MultiSelectModal';
 import LaporanResultPage from './LaporanResultPage';
@@ -47,6 +48,10 @@ function FilterChip({ label, items, nameField, onClear, onBrowse, emptyText }) {
 }
 
 export default function LaporanStokSekarang() {
+  const { access } = useMenuAccess('laporan.stok.sekarang');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState({ totalBarang: 0, totalStok: 0 });

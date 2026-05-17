@@ -6,6 +6,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import { useConfirm } from '../../../components/ui/ConfirmDialog';
 import useTabStore from '../../../store/tabStore';
+import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import CustomerForm from './CustomerForm';
 
 const downloadFile = (url, filename) => {
@@ -43,6 +44,9 @@ export default function Customer({ isActive }) {
   const [showTemplateInfo, setShowTemplateInfo] = useState(false);
   const openTab                                 = useTabStore((s) => s.openTab);
   const confirm                                 = useConfirm();
+  const { access } = useMenuAccess('master.customer');
+  const canTambah = canAccess(access, 'tambah');
+  const canUbah = canAccess(access, 'ubah');
 
   const load = useCallback(async () => {
     const { data: res } = await api.get('/customer');
@@ -86,9 +90,11 @@ export default function Customer({ isActive }) {
           <p className="text-sm text-dark-300">Manajemen data customer</p>
         </div>
         <div className="flex items-center gap-2">
+          {canTambah && (
           <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-all hover:shadow-lg hover:shadow-primary-500/20 active:scale-[0.98]">
             <Plus className="w-4 h-4" /> Tambah Customer
           </button>
+          )}
           <button onClick={() => downloadFile('/impor/customer/export', 'customer-export.csv')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary-100 text-xs font-semibold text-dark-400 hover:bg-warm-50 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export
           </button>
@@ -130,8 +136,12 @@ export default function Customer({ isActive }) {
                     <td className="px-4 py-3 text-dark-400">{c.hp || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
+                        {canUbah && (
                         <button onClick={() => handleEdit(c)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500"><Pencil className="w-3.5 h-3.5" /></button>
+                        )}
+                        {canTambah && (
                         <button onClick={() => handleDelete(c.idcustomer)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                        )}
                       </div>
                     </td>
                   </tr>
