@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Search, RefreshCw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, RefreshCw, Settings } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
 import { useConfirm } from '../../../components/ui/ConfirmDialog';
 import useTabStore from '../../../store/tabStore';
 import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
 import AkunForm from './AkunForm';
+import AkunSettingJurnalModal from './AkunSettingJurnalModal';
 
 export default function Akun({ isActive }) {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [showSettingJurnal, setShowSettingJurnal] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
   const confirm = useConfirm();
   const { access } = useMenuAccess('master.akun');
@@ -37,6 +39,9 @@ export default function Akun({ isActive }) {
         <div className="flex items-center gap-2">
           {canTambah && (
           <button onClick={handleTambah} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold"><Plus className="w-4 h-4" /> Tambah Akun</button>
+          )}
+          {canUbah && (
+          <button onClick={() => setShowSettingJurnal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold"><Settings className="w-4 h-4" /> Setting Default Jurnal</button>
           )}
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary-100 text-sm font-semibold text-dark-400"><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
@@ -81,6 +86,7 @@ export default function Akun({ isActive }) {
           <Pagination page={page} totalPages={totalPages} setPage={setPage} />
         </div>
       </div>
+      {showSettingJurnal && <AkunSettingJurnalModal onClose={() => setShowSettingJurnal(false)} />}
     </div>
   );
 }

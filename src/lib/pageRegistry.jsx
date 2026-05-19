@@ -36,6 +36,7 @@ const LaporanPage        = lazy(() => import('../modules/laporan/LaporanPage'));
 const LaporanStokSekarang  = lazy(() => import('../modules/laporan/LaporanStokSekarang'));
 const LaporanStokKartuStok = lazy(() => import('../modules/laporan/LaporanStokKartuStok'));
 const LaporanStokTransaksi = lazy(() => import('../modules/laporan/LaporanStokTransaksi'));
+const LaporanAkuntansi     = lazy(() => import('../modules/laporan/LaporanAkuntansi'));
 
 const registry = {
   'dashboard': {
@@ -98,6 +99,11 @@ const registry = {
   'laporan.stok.kartustok': { component: LaporanStokKartuStok, label: 'Kartu Stok',   icon: ClipboardList },
   'laporan.stok.opname'   : { component: LaporanStokTransaksi, label: 'Opname Stok',  icon: ClipboardList, props: { jenis: 'opname' } },
   'laporan.stok.transfer' : { component: LaporanStokTransaksi, label: 'Transfer Stok', icon: ClipboardList, props: { jenis: 'transfer' } },
+
+  // Laporan Akuntansi
+  'laporan.akuntansi.jurnal'   : { component: LaporanAkuntansi, label: 'Jurnal Transaksi', icon: FileBarChart, props: { type: 'jurnal' } },
+  'laporan.akuntansi.bukubesar': { component: LaporanAkuntansi, label: 'Buku Besar',       icon: FileBarChart, props: { type: 'buku-besar' } },
+  'laporan.akuntansi.neraca'   : { component: LaporanAkuntansi, label: 'Neraca',           icon: FileBarChart, props: { type: 'neraca' } },
 
   // Setting
   'setting': { component: Setting, label: 'Setting Perusahaan', icon: Settings },

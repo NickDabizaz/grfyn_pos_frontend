@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import toast from 'react-hot-toast';
-import { Plus, Search, RefreshCw, Eye } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, CheckCircle, XCircle, Pencil, Trash2 } from 'lucide-react';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../../../components/ui/Pagination';
-import { useAuthStore } from '../../../store/authStore';
 import useTabStore from '../../../store/tabStore';
 import { useMenuAccess, canAccess } from '../../../hooks/useMenuAccess';
+import { useConfirm } from '../../../components/ui/ConfirmDialog';
 import KasForm from './KasForm';
 
 export default function Kas({ isActive }) {
@@ -14,6 +14,7 @@ export default function Kas({ isActive }) {
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const openTab = useTabStore((s) => s.openTab);
+  const confirm = useConfirm();
 
   const { access } = useMenuAccess('keuangan.kas');
   const canTambah = canAccess(access, 'tambah');
@@ -31,6 +32,15 @@ export default function Kas({ isActive }) {
 
   const handleRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
   const handleTambah = () => { openTab({ label: 'Kas', icon: Plus, component: KasForm, props: { mode: 'add', onSuccess: load }, type: 'form_add' }); };
+  const handleEdit = async (k) => {
+    if (!canUbah) return toast.error('Tidak memiliki akses ubah');
+    try {
+      const { data } = await api.get(`/kas/${k.idkas}`);
+      openTab({ label: `Edit ${k.kodekas}`, icon: Pencil, component: KasForm, props: { mode: 'edit', id: k.idkas, data, onSuccess: load }, type: 'form_edit' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal memuat kas');
+    }
+  };
   const handleDetail = (k) => {
     openTab({
       label: `Kas: ${k.kodekas}`,
@@ -38,6 +48,37 @@ export default function Kas({ isActive }) {
       props: { idkas: k.idkas, kodekas: k.kodekas },
       type: 'list',
     });
+  };
+  const action = async (e, row, type) => {
+    e.stopPropagation();
+    const map = {
+      approve: { url: 'approve', title: 'Approve Kas', msg: 'Approve transaksi kas ini?', ok: 'Approve', access: 'approve' },
+      unapprove: { url: 'unapprove', title: 'Batal Approve Kas', msg: 'Kembalikan transaksi kas ini ke DRAFT?', ok: 'Batal Approve', access: 'batalapprove' },
+      cancel: { url: 'cancel', title: 'Batalkan Kas', msg: 'Batalkan transaksi kas DRAFT ini?', ok: 'Batalkan', access: 'bataltransaksi' },
+    }[type];
+    if (!canAccess(access, map.access)) return toast.error(`Tidak memiliki akses ${map.ok.toLowerCase()}`);
+    const ok = await confirm({ title: map.title, message: map.msg, confirmText: map.ok, cancelText: 'Tutup', variant: type === 'approve' ? 'primary' : 'danger' });
+    if (!ok) return;
+    try {
+      await api.put(`/kas/${row.idkas}/${map.url}`);
+      toast.success(`${map.ok} berhasil`);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal proses kas');
+    }
+  };
+  const handleDelete = async (e, row) => {
+    e.stopPropagation();
+    if (!canUbah) return toast.error('Tidak memiliki akses hapus');
+    const ok = await confirm({ title: 'Hapus Kas', message: 'Hapus permanen transaksi kas ini?', confirmText: 'Hapus', cancelText: 'Tutup', variant: 'danger' });
+    if (!ok) return;
+    try {
+      await api.delete(`/kas/${row.idkas}`);
+      toast.success('Kas berhasil dihapus');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal menghapus kas');
+    }
   };
 
   return (
@@ -62,15 +103,20 @@ export default function Kas({ isActive }) {
             <table className="w-full">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-primary-50 bg-warm-50/50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th><th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th><th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Status</th><th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-16">Aksi</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Kode</th><th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Tanggal</th><th className="text-left px-4 py-3 text-xs font-semibold text-dark-300">Status</th><th className="text-center px-4 py-3 text-xs font-semibold text-dark-300 w-64">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedItems.map((k) => (
-                  <tr key={k.idkas} className="border-b border-primary-50/50 hover:bg-warm-50/30 text-sm">
-                    <td className="px-4 py-3 text-xs font-mono text-dark-300">{k.kodekas}</td><td className="px-4 py-3 text-dark-400">{k.tgltrans?.slice(0,10)}</td><td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${k.status === 'NONAKTIF' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{k.status}</span></td>
+                  <tr key={k.idkas} onDoubleClick={() => handleEdit(k)} className="border-b border-primary-50/50 hover:bg-warm-50/30 text-sm">
+                    <td className="px-4 py-3 text-xs font-mono text-dark-300">{k.kodekas}</td><td className="px-4 py-3 text-dark-400">{k.tgltrans?.slice(0,10)}</td><td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${k.status === 'CANCELLED' ? 'bg-red-50 text-red-600' : k.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{k.status}</span></td>
                     <td className="px-4 py-3"><div className="flex items-center justify-center gap-1">
                       <button onClick={() => handleDetail(k)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500"><Eye className="w-3.5 h-3.5" /></button>
+                      {k.status === 'DRAFT' && canUbah && <button onClick={() => handleEdit(k)} className="p-1.5 rounded-lg hover:bg-primary-50 text-dark-300 hover:text-primary-500"><Pencil className="w-3.5 h-3.5" /></button>}
+                      {k.status === 'DRAFT' && canAccess(access, 'approve') && <button onClick={(e) => action(e, k, 'approve')} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-50 text-emerald-600 hover:bg-emerald-100"><CheckCircle className="w-3 h-3" /> Approve</button>}
+                      {k.status === 'APPROVED' && canAccess(access, 'batalapprove') && <button onClick={(e) => action(e, k, 'unapprove')} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold bg-amber-50 text-amber-600 hover:bg-amber-100"><XCircle className="w-3 h-3" /> Batal Approve</button>}
+                      {k.status === 'DRAFT' && canAccess(access, 'bataltransaksi') && <button onClick={(e) => action(e, k, 'cancel')} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 hover:bg-red-100">Batal</button>}
+                      {k.status !== 'APPROVED' && canUbah && <button onClick={(e) => handleDelete(e, k)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-300 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>}
                     </div></td>
                   </tr>
                 ))}

@@ -8,6 +8,7 @@ import useTabStore from '../../../store/tabStore';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/l10n/id.js';
 import { BrowseCustomerModal } from '../../../lib/formHelpers';
+import DetailJurnalPembayaran, { normalizePembayaran } from '../DetailJurnalPembayaran';
 
 const STATUS_BADGE = {
   DRAFT: 'bg-amber-50 text-amber-600 border-amber-100',
@@ -32,6 +33,8 @@ export default function PelunasanPiutangForm({ onSuccess, tabId, editData }) {
   );
   const [metodbayar, setMetodbayar] = useState(editData?.metodbayar || 'TUNAI');
   const [catatan, setCatatan]       = useState(editData?.catatan || '');
+  const [akunList, setAkunList] = useState([]);
+  const [pembayaran, setPembayaran] = useState(normalizePembayaran(editData?.pembayaran || []));
 
   const [invoices, setInvoices] = useState([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -40,6 +43,10 @@ export default function PelunasanPiutangForm({ onSuccess, tabId, editData }) {
 
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get('/akun').then(r => setAkunList(r.data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!customer) { setInvoices([]); setSelectedIds(new Set()); setAmounts({}); return; }
@@ -102,6 +109,16 @@ export default function PelunasanPiutangForm({ onSuccess, tabId, editData }) {
     if (!customer) return toast.error('Customer harus dipilih');
     if (computedDetails.length === 0) return toast.error('Pilih minimal satu invoice untuk dibayar');
     if (!autoGenerate && !kode.trim()) return toast.error('Kode pelunasan wajib diisi');
+    const pembayaranPayload = pembayaran
+      .filter(p => p.idakun || p.amount)
+      .map(p => ({ idakun: Number(p.idakun), amount: parseFloat(p.amount) || 0 }));
+    if (pembayaranPayload.some(p => !p.idakun || p.amount <= 0)) return toast.error('Lengkapi semua baris Detail Jurnal');
+    if (pembayaranPayload.length > 0) {
+      const totalPembayaran = pembayaranPayload.reduce((s, p) => s + p.amount, 0);
+      if (Math.abs(totalPembayaran - totalBayar) >= 0.01) {
+        return toast.error('Total pembayaran (Detail Jurnal) tidak sesuai dengan total pelunasan');
+      }
+    }
 
     setLoading(true);
     try {
@@ -116,6 +133,7 @@ export default function PelunasanPiutangForm({ onSuccess, tabId, editData }) {
           kodetrans: d.kodetrans,
           amount: d.payAmount,
         })),
+        pembayaran: pembayaranPayload,
       };
 
       if (isEdit) {
@@ -327,6 +345,14 @@ export default function PelunasanPiutangForm({ onSuccess, tabId, editData }) {
               )}
             </div>
           </div>
+
+          <DetailJurnalPembayaran
+            rows={pembayaran}
+            setRows={setPembayaran}
+            akunList={akunList}
+            totalBayar={totalBayar}
+            disabled={isLocked}
+          />
 
           {/* SECTION 3: FOOTER */}
           <div className="bg-white rounded-2xl border border-primary-50 p-5">
